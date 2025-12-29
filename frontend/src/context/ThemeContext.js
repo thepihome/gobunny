@@ -11,6 +11,17 @@ export const useTheme = () => {
 };
 
 const themes = {
+  ui8: {
+    name: 'UI8 Modern',
+    primary: '#6366f1',
+    secondary: '#8b5cf6',
+    background: '#f8fafc',
+    surface: '#ffffff',
+    text: '#1e293b',
+    textSecondary: '#64748b',
+    border: '#e2e8f0',
+    navbar: '#1e293b',
+  },
   light: {
     name: 'Light',
     primary: '#007bff',
@@ -71,7 +82,7 @@ const themes = {
 export const ThemeProvider = ({ children }) => {
   const [currentTheme, setCurrentTheme] = useState(() => {
     const saved = localStorage.getItem('theme');
-    return saved || 'light';
+    return saved || 'ui8';
   });
 
   useEffect(() => {

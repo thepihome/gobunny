@@ -5,14 +5,15 @@
 }
 
 .navbar {
-  background-color: var(--navbar-color, #2c3e50);
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   color: white;
   padding: 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-lg);
   position: sticky;
   top: 0;
   z-index: 1000;
-  transition: background-color 0.3s;
+  transition: all 0.3s;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .navbar-content {
@@ -76,14 +77,15 @@
 }
 
 .sidebar {
-  width: 250px;
-  background-color: white;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s;
+  width: 260px;
+  background-color: var(--sidebar-bg);
+  box-shadow: var(--shadow-md);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: sticky;
-  top: 60px;
-  height: calc(100vh - 60px);
+  top: 64px;
+  height: calc(100vh - 64px);
   overflow-y: auto;
+  border-right: 1px solid var(--border-light);
 }
 
 .sidebar-nav {
@@ -95,22 +97,32 @@
   align-items: center;
   gap: 12px;
   padding: 12px 20px;
-  color: #333;
+  color: var(--text-color);
   text-decoration: none;
-  transition: all 0.3s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   border-left: 3px solid transparent;
+  margin: 2px 8px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
 }
 
 .sidebar-item:hover {
-  background-color: #f8f9fa;
-  border-left-color: #007bff;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%);
+  border-left-color: var(--primary-color);
+  color: var(--primary-color);
+  transform: translateX(4px);
 }
 
 .sidebar-item.active {
-  background-color: #e7f3ff;
-  border-left-color: #007bff;
-  color: #007bff;
-  font-weight: 500;
+  background: var(--gradient-primary);
+  color: white;
+  border-left-color: var(--primary-color);
+  font-weight: 600;
+  box-shadow: var(--shadow-md);
+}
+
+.sidebar-item.active svg {
+  color: white;
 }
 
 .sidebar-item svg {
@@ -119,8 +131,10 @@
 
 .main-content {
   flex: 1;
-  padding: 30px;
+  padding: 32px;
   overflow-y: auto;
+  background-color: var(--background-color);
+  min-height: calc(100vh - 64px);
 }
 
 @media (max-width: 768px) {
