@@ -50,12 +50,21 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (userData) => {
-    const response = await api.post('/auth/register', userData);
-    const { token, user } = response.data;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    setUser(user);
-    return user;
+    try {
+      const response = await api.post('/auth/register', userData);
+      if (!response.data || !response.data.token) {
+        throw new Error('Registration failed: No token received');
+      }
+      const { token, user } = response.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      setUser(user);
+      return user;
+    } catch (error) {
+      console.error('Registration error:', error);
+      console.error('Response:', error.response?.data);
+      throw error;
+    }
   };
 
   const logout = () => {

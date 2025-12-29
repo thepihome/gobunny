@@ -42,13 +42,31 @@ export async function execute(env, sql, params = []) {
     }
     
     const result = await stmt.run();
+    
+    // D1 run() returns: { success: true, meta: { duration: ..., last_row_id: ..., rows_read: ..., rows_written: ... } }
+    // Log the full result for debugging
+    console.log('D1 execute result:', JSON.stringify(result));
+    
+    // Extract last_row_id from meta
+    const lastRowId = result.meta?.last_row_id ?? null;
+    
+    if (!lastRowId && result.meta) {
+      console.warn('No last_row_id in result.meta. Full meta:', JSON.stringify(result.meta));
+    }
+    
     return { 
       success: true, 
-      meta: result.meta,
-      lastInsertRowid: result.meta.last_row_id 
+      meta: {
+        ...result.meta,
+        last_row_id: lastRowId
+      },
+      lastInsertRowid: lastRowId,
+      rawResult: result // Include for debugging
     };
   } catch (error) {
     console.error('Database execute error:', error);
+    console.error('SQL:', sql);
+    console.error('Params:', params);
     throw error;
   }
 }

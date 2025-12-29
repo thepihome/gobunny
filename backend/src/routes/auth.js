@@ -47,11 +47,16 @@ export async function handleAuth(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
   const method = request.method;
+  
+  // Get origin for CORS
+  const requestOrigin = request.headers.get('Origin');
 
   // Register
   if (path === '/api/auth/register' && method === 'POST') {
+    console.log('Registration request received');
     try {
       const body = await request.json();
+      console.log('Registration body:', { email: body.email, first_name: body.first_name, last_name: body.last_name, role: body.role });
       const { email, password, first_name, last_name, role, phone } = body;
 
       // Check if user exists
@@ -67,7 +72,8 @@ export async function handleAuth(request, env) {
             JSON.stringify({ error: 'User already exists' }),
             { status: 400, headers: { 'Content-Type': 'application/json' } }
           ),
-          env
+          env,
+          request
         );
       }
 
@@ -75,27 +81,54 @@ export async function handleAuth(request, env) {
       const password_hash = await hashPassword(password);
 
       // Insert user
-      const result = await execute(
-        env,
-        `INSERT INTO users (email, password_hash, first_name, last_name, role, phone)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [email, password_hash, first_name, last_name, role || 'candidate', phone || null]
-      );
+      console.log('Attempting to insert user:', { email, first_name, last_name, role: role || 'candidate' });
+      
+      let result;
+      try {
+        result = await execute(
+          env,
+          `INSERT INTO users (email, password_hash, first_name, last_name, role, phone)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [email, password_hash, first_name, last_name, role || 'candidate', phone || null]
+        );
+        console.log('Insert result:', JSON.stringify(result));
+      } catch (dbError) {
+        console.error('Database insert error:', dbError);
+        console.error('Error details:', {
+          message: dbError.message,
+          stack: dbError.stack,
+          name: dbError.name
+        });
+        throw new Error(`Database error: ${dbError.message}`);
+      }
 
-      const userId = result.meta.last_row_id;
+      const userId = result.meta?.last_row_id || result.lastInsertRowid;
+      
+      if (!userId) {
+        console.error('Failed to get last insert ID. Result:', JSON.stringify(result));
+        console.error('Result meta:', result.meta);
+        throw new Error('Failed to create user - no ID returned');
+      }
+      
+      console.log('User created with ID:', userId);
 
-      // Generate token
-      const token = createJWT(
-        { userId },
-        env.JWT_SECRET,
-        env.JWT_EXPIRE || '7d'
-      );
-
-      // Get created user
+      // Get created user immediately to verify insertion
       const user = await queryOne(
         env,
         'SELECT id, email, first_name, last_name, role FROM users WHERE id = ?',
         [userId]
+      );
+      
+      if (!user) {
+        console.error('User was not found after insertion. ID:', userId);
+        throw new Error('User was not created successfully');
+      }
+
+      // Generate token
+      const token = createJWT(
+        { userId: user.id },
+        env.JWT_SECRET,
+        env.JWT_EXPIRE || '7d'
       );
 
       return addCorsHeaders(
@@ -115,16 +148,33 @@ export async function handleAuth(request, env) {
             headers: { 'Content-Type': 'application/json' },
           }
         ),
-        env
+        env,
+        request
       );
     } catch (error) {
       console.error('Registration error:', error);
+      console.error('Error stack:', error.stack);
+      console.error('Error message:', error.message);
+      console.error('Error name:', error.name);
+      
+      // Return detailed error for debugging
+      const errorMessage = error.message || 'Unknown error';
+      const isDevelopment = env.NODE_ENV === 'development' || !env.NODE_ENV;
+      
       return addCorsHeaders(
         new Response(
-          JSON.stringify({ error: 'Server error' }),
+          JSON.stringify({ 
+            error: 'Registration failed',
+            message: isDevelopment ? errorMessage : 'Failed to create user. Please try again.',
+            details: isDevelopment ? {
+              name: error.name,
+              stack: error.stack
+            } : undefined
+          }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
         ),
-        env
+        env,
+        request
       );
     }
   }
@@ -148,7 +198,8 @@ export async function handleAuth(request, env) {
             JSON.stringify({ error: 'Invalid credentials' }),
             { status: 401, headers: { 'Content-Type': 'application/json' } }
           ),
-          env
+          env,
+          request
         );
       }
 
@@ -158,7 +209,8 @@ export async function handleAuth(request, env) {
             JSON.stringify({ error: 'Account is deactivated' }),
             { status: 401, headers: { 'Content-Type': 'application/json' } }
           ),
-          env
+          env,
+          request
         );
       }
 
@@ -170,7 +222,8 @@ export async function handleAuth(request, env) {
             JSON.stringify({ error: 'Invalid credentials' }),
             { status: 401, headers: { 'Content-Type': 'application/json' } }
           ),
-          env
+          env,
+          request
         );
       }
 
@@ -198,7 +251,8 @@ export async function handleAuth(request, env) {
             headers: { 'Content-Type': 'application/json' },
           }
         ),
-        env
+        env,
+        request
       );
     } catch (error) {
       console.error('Login error:', error);
@@ -207,7 +261,8 @@ export async function handleAuth(request, env) {
           JSON.stringify({ error: 'Server error' }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
         ),
-        env
+        env,
+        request
       );
     }
   }
@@ -226,7 +281,8 @@ export async function handleAuth(request, env) {
             headers: { 'Content-Type': 'application/json' },
           }
         ),
-        env
+        env,
+        request
       );
     }
 
@@ -238,7 +294,8 @@ export async function handleAuth(request, env) {
           headers: { 'Content-Type': 'application/json' },
         }
       ),
-      env
+      env,
+      request
     );
   }
 
@@ -247,7 +304,8 @@ export async function handleAuth(request, env) {
       JSON.stringify({ error: 'Not found' }),
       { status: 404, headers: { 'Content-Type': 'application/json' } }
     ),
-    env
+    env,
+    request
   );
 }
 

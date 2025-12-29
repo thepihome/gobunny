@@ -9,7 +9,9 @@ export async function handleTimesheets(request, env, user) {
     new Response(
       JSON.stringify({ error: 'Timesheets endpoint not yet fully implemented' }),
       { status: 501, headers: { 'Content-Type': 'application/json' } }
-    )
+    ),
+    env,
+    request
   );
 }
 

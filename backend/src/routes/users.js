@@ -12,7 +12,9 @@ export async function handleUsers(request, env, user) {
       new Response(
         JSON.stringify({ error: authError.error }),
         { status: authError.status, headers: { 'Content-Type': 'application/json' } }
-      )
+      ),
+      env,
+      request
     );
   }
 
@@ -20,7 +22,9 @@ export async function handleUsers(request, env, user) {
     new Response(
       JSON.stringify({ error: 'Users endpoint not yet fully implemented' }),
       { status: 501, headers: { 'Content-Type': 'application/json' } }
-    )
+    ),
+    env,
+    request
   );
 }
 

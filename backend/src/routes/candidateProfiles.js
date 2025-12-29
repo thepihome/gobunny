@@ -9,7 +9,9 @@ export async function handleCandidateProfiles(request, env, user) {
     new Response(
       JSON.stringify({ error: 'Candidate profiles endpoint not yet fully implemented' }),
       { status: 501, headers: { 'Content-Type': 'application/json' } }
-    )
+    ),
+    env,
+    request
   );
 }
 

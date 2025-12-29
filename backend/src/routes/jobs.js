@@ -76,7 +76,9 @@ export async function handleJobs(request, env, user) {
         new Response(
           JSON.stringify(jobs),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     } catch (error) {
       console.error('Error fetching jobs:', error);
@@ -84,7 +86,9 @@ export async function handleJobs(request, env, user) {
         new Response(
           JSON.stringify({ error: 'Server error' }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     }
   }
@@ -101,7 +105,9 @@ export async function handleJobs(request, env, user) {
           new Response(
             JSON.stringify({ error: 'Job not found' }),
             { status: 404, headers: { 'Content-Type': 'application/json' } }
-          )
+          ),
+          env,
+          request
         );
       }
 
@@ -125,7 +131,9 @@ export async function handleJobs(request, env, user) {
         new Response(
           JSON.stringify(job),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     } catch (error) {
       console.error('Error fetching job:', error);
@@ -133,7 +141,9 @@ export async function handleJobs(request, env, user) {
         new Response(
           JSON.stringify({ error: 'Server error' }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     }
   }
@@ -146,7 +156,9 @@ export async function handleJobs(request, env, user) {
         new Response(
           JSON.stringify({ error: authError.error }),
           { status: authError.status, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     }
 
@@ -196,7 +208,9 @@ export async function handleJobs(request, env, user) {
         new Response(
           JSON.stringify(job),
           { status: 201, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     } catch (error) {
       console.error('Error creating job:', error);
@@ -204,7 +218,9 @@ export async function handleJobs(request, env, user) {
         new Response(
           JSON.stringify({ error: 'Server error' }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     }
   }
@@ -217,7 +233,9 @@ export async function handleJobs(request, env, user) {
         new Response(
           JSON.stringify({ error: authError.error }),
           { status: authError.status, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     }
 
@@ -252,7 +270,9 @@ export async function handleJobs(request, env, user) {
           new Response(
             JSON.stringify({ error: 'Job not found' }),
             { status: 404, headers: { 'Content-Type': 'application/json' } }
-          )
+          ),
+          env,
+          request
         );
       }
 
@@ -276,7 +296,9 @@ export async function handleJobs(request, env, user) {
         new Response(
           JSON.stringify(job),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     } catch (error) {
       console.error('Error updating job:', error);
@@ -284,7 +306,9 @@ export async function handleJobs(request, env, user) {
         new Response(
           JSON.stringify({ error: 'Server error' }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     }
   }
@@ -297,7 +321,9 @@ export async function handleJobs(request, env, user) {
         new Response(
           JSON.stringify({ error: authError.error }),
           { status: authError.status, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     }
 
@@ -316,7 +342,9 @@ export async function handleJobs(request, env, user) {
           new Response(
             JSON.stringify({ error: 'Job not found' }),
             { status: 404, headers: { 'Content-Type': 'application/json' } }
-          )
+          ),
+          env,
+          request
         );
       }
 
@@ -324,7 +352,9 @@ export async function handleJobs(request, env, user) {
         new Response(
           JSON.stringify({ message: 'Job deleted successfully', job }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     } catch (error) {
       console.error('Error deleting job:', error);
@@ -332,7 +362,9 @@ export async function handleJobs(request, env, user) {
         new Response(
           JSON.stringify({ error: 'Server error' }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     }
   }
@@ -341,7 +373,9 @@ export async function handleJobs(request, env, user) {
     new Response(
       JSON.stringify({ error: 'Not found' }),
       { status: 404, headers: { 'Content-Type': 'application/json' } }
-    )
+    ),
+    env,
+    request
   );
 }
 

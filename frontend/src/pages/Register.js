@@ -30,7 +30,11 @@ const Register = () => {
       await register(formData);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed');
+      console.error('Registration error:', err);
+      console.error('Error response:', err.response);
+      const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Registration failed';
+      setError(errorMessage);
+      // Don't navigate if registration failed
     } finally {
       setLoading(false);
     }

@@ -10,7 +10,9 @@ export async function handleCandidates(request, env, user) {
     new Response(
       JSON.stringify({ error: 'Candidates endpoint not yet fully implemented' }),
       { status: 501, headers: { 'Content-Type': 'application/json' } }
-    )
+    ),
+    env,
+    request
   );
 }
 

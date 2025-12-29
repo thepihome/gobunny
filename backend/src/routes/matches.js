@@ -17,7 +17,9 @@ export async function handleMatches(request, env, user) {
     new Response(
       JSON.stringify({ error: 'Matches endpoint not yet fully implemented' }),
       { status: 501, headers: { 'Content-Type': 'application/json' } }
-    )
+    ),
+    env,
+    request
   );
 }
 

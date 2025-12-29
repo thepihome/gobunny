@@ -9,7 +9,9 @@ export async function handlePermissions(request, env, user) {
     new Response(
       JSON.stringify({ error: 'Permissions endpoint not yet fully implemented' }),
       { status: 501, headers: { 'Content-Type': 'application/json' } }
-    )
+    ),
+    env,
+    request
   );
 }
 

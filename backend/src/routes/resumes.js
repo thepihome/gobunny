@@ -64,7 +64,9 @@ export async function handleResumes(request, env, user) {
           new Response(
             JSON.stringify({ error: 'No file uploaded' }),
             { status: 400, headers: { 'Content-Type': 'application/json' } }
-          )
+          ),
+          env,
+          request
         );
       }
 
@@ -76,7 +78,9 @@ export async function handleResumes(request, env, user) {
           new Response(
             JSON.stringify({ error: 'Invalid file type. Only PDF, DOC, and DOCX are allowed.' }),
             { status: 400, headers: { 'Content-Type': 'application/json' } }
-          )
+          ),
+          env,
+          request
         );
       }
 
@@ -86,7 +90,9 @@ export async function handleResumes(request, env, user) {
           new Response(
             JSON.stringify({ error: 'File size exceeds 5MB limit' }),
             { status: 400, headers: { 'Content-Type': 'application/json' } }
-          )
+          ),
+          env,
+          request
         );
       }
 
@@ -137,7 +143,9 @@ export async function handleResumes(request, env, user) {
         new Response(
           JSON.stringify(resume),
           { status: 201, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     } catch (error) {
       console.error('Error uploading resume:', error);
@@ -145,7 +153,9 @@ export async function handleResumes(request, env, user) {
         new Response(
           JSON.stringify({ error: 'Server error' }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     }
   }
@@ -175,7 +185,9 @@ export async function handleResumes(request, env, user) {
         new Response(
           JSON.stringify(resumes),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     } catch (error) {
       console.error('Error fetching resumes:', error);
@@ -183,7 +195,9 @@ export async function handleResumes(request, env, user) {
         new Response(
           JSON.stringify({ error: 'Server error' }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     }
   }
@@ -196,7 +210,9 @@ export async function handleResumes(request, env, user) {
         new Response(
           JSON.stringify({ error: authError.error }),
           { status: authError.status, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     }
 
@@ -225,7 +241,9 @@ export async function handleResumes(request, env, user) {
         new Response(
           JSON.stringify(resumes),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     } catch (error) {
       console.error('Error fetching resumes:', error);
@@ -233,7 +251,9 @@ export async function handleResumes(request, env, user) {
         new Response(
           JSON.stringify({ error: 'Server error' }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     }
   }
@@ -257,7 +277,9 @@ export async function handleResumes(request, env, user) {
           new Response(
             JSON.stringify({ error: 'Resume not found' }),
             { status: 404, headers: { 'Content-Type': 'application/json' } }
-          )
+          ),
+          env,
+          request
         );
       }
 
@@ -267,7 +289,9 @@ export async function handleResumes(request, env, user) {
           new Response(
             JSON.stringify({ error: 'Access denied' }),
             { status: 403, headers: { 'Content-Type': 'application/json' } }
-          )
+          ),
+          env,
+          request
         );
       }
 
@@ -284,7 +308,9 @@ export async function handleResumes(request, env, user) {
         new Response(
           JSON.stringify(resume),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     } catch (error) {
       console.error('Error fetching resume:', error);
@@ -292,7 +318,9 @@ export async function handleResumes(request, env, user) {
         new Response(
           JSON.stringify({ error: 'Server error' }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     }
   }
@@ -313,7 +341,9 @@ export async function handleResumes(request, env, user) {
           new Response(
             JSON.stringify({ error: 'Resume not found' }),
             { status: 404, headers: { 'Content-Type': 'application/json' } }
-          )
+          ),
+          env,
+          request
         );
       }
 
@@ -323,7 +353,9 @@ export async function handleResumes(request, env, user) {
           new Response(
             JSON.stringify({ error: 'Access denied' }),
             { status: 403, headers: { 'Content-Type': 'application/json' } }
-          )
+          ),
+          env,
+          request
         );
       }
 
@@ -334,7 +366,9 @@ export async function handleResumes(request, env, user) {
           new Response(
             JSON.stringify({ error: 'File not found' }),
             { status: 404, headers: { 'Content-Type': 'application/json' } }
-          )
+          ),
+          env,
+          request
         );
       }
 
@@ -347,7 +381,9 @@ export async function handleResumes(request, env, user) {
         new Response(fileData, {
           status: 200,
           headers,
-        })
+        }),
+        env,
+        request
       );
     } catch (error) {
       console.error('Error downloading resume:', error);
@@ -355,7 +391,9 @@ export async function handleResumes(request, env, user) {
         new Response(
           JSON.stringify({ error: 'Server error' }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     }
   }
@@ -379,7 +417,9 @@ export async function handleResumes(request, env, user) {
           new Response(
             JSON.stringify({ error: 'Resume not found' }),
             { status: 404, headers: { 'Content-Type': 'application/json' } }
-          )
+          ),
+          env,
+          request
         );
       }
 
@@ -388,7 +428,9 @@ export async function handleResumes(request, env, user) {
           new Response(
             JSON.stringify({ error: 'Access denied' }),
             { status: 403, headers: { 'Content-Type': 'application/json' } }
-          )
+          ),
+          env,
+          request
         );
       }
 
@@ -424,7 +466,9 @@ export async function handleResumes(request, env, user) {
         new Response(
           JSON.stringify(updatedResume),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     } catch (error) {
       console.error('Error updating resume:', error);
@@ -432,7 +476,9 @@ export async function handleResumes(request, env, user) {
         new Response(
           JSON.stringify({ error: 'Server error' }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     }
   }
@@ -452,7 +498,9 @@ export async function handleResumes(request, env, user) {
           new Response(
             JSON.stringify({ error: 'Resume not found' }),
             { status: 404, headers: { 'Content-Type': 'application/json' } }
-          )
+          ),
+          env,
+          request
         );
       }
 
@@ -461,7 +509,9 @@ export async function handleResumes(request, env, user) {
           new Response(
             JSON.stringify({ error: 'Access denied' }),
             { status: 403, headers: { 'Content-Type': 'application/json' } }
-          )
+          ),
+          env,
+          request
         );
       }
 
@@ -477,7 +527,9 @@ export async function handleResumes(request, env, user) {
         new Response(
           JSON.stringify({ message: 'Resume deleted successfully' }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     } catch (error) {
       console.error('Error deleting resume:', error);
@@ -485,7 +537,9 @@ export async function handleResumes(request, env, user) {
         new Response(
           JSON.stringify({ error: 'Server error' }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
-        )
+        ),
+        env,
+        request
       );
     }
   }
@@ -494,7 +548,9 @@ export async function handleResumes(request, env, user) {
     new Response(
       JSON.stringify({ error: 'Not found' }),
       { status: 404, headers: { 'Content-Type': 'application/json' } }
-    )
+    ),
+    env,
+    request
   );
 }
 
