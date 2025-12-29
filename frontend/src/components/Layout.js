@@ -35,7 +35,7 @@ const Layout = ({ children }) => {
           <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
             {sidebarOpen ? <FiX /> : <FiMenu />}
           </button>
-          <h1 className="navbar-title">Job Hunting Platform</h1>
+          <h1 className="navbar-title">GoBunnyy</h1>
           <div className="navbar-user">
             <span>{user?.first_name} {user?.last_name}</span>
             <span className="navbar-role">{user?.role}</span>

@@ -12,7 +12,7 @@ const rl = readline.createInterface({
 const question = (query) => new Promise(resolve => rl.question(query, resolve));
 
 async function setupDatabase() {
-  console.log('📦 Database Setup for Job Hunting Platform\n');
+  console.log('📦 Database Setup for GoBunnyy\n');
   
   // Get database credentials
   const dbHost = process.env.DB_HOST || await question('Database host (default: localhost): ') || 'localhost';

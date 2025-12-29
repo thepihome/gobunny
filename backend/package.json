@@ -1,7 +1,7 @@
 {
-  "name": "job-hunting-backend",
+  "name": "gobunnyy-backend",
   "version": "1.0.0",
-  "description": "Backend API for job hunting platform",
+  "description": "Backend API for GoBunnyy",
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",

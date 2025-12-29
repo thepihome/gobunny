@@ -1,7 +1,7 @@
 {
-  "name": "job-hunting-platform",
+  "name": "gobunnyy",
   "version": "1.0.0",
-  "description": "Interactive web dashboard for job hunting with multi-role support",
+  "description": "GoBunnyy - Interactive web dashboard with multi-role support",
   "main": "server.js",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
@@ -9,7 +9,7 @@
     "client": "cd frontend && npm start",
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install"
   },
-  "keywords": ["job-hunting", "dashboard", "recruitment"],
+  "keywords": ["gobunnyy", "dashboard", "recruitment"],
   "author": "",
   "license": "ISC",
   "devDependencies": {

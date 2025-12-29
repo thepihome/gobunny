@@ -1,4 +1,4 @@
-# Job Hunting Platform
+# GoBunnyy
 
 A comprehensive web application for job hunting with multi-role support (Candidates, Consultants/HR, and Admins). Features include job search, resume matching, CRM integration, timesheet management, and customizable KPI dashboards.
 
