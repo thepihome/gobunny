@@ -26,7 +26,7 @@ const fieldMapping = {
 };
 
 // Build WHERE conditions from filter conditions
-function buildFilterConditions(filterConditions, baseTable = 'u') {
+export function buildFilterConditions(filterConditions, baseTable = 'u') {
   const whereConditions = [];
   const params = [];
   
@@ -299,7 +299,20 @@ export async function handleCandidates(request, env, user) {
       let whereConditions = ["u.role = 'candidate'"];
       const params = [];
 
-      // Search filter (name, email, company)
+      // Handle dynamic filter conditions
+      const queryParam = searchParams.get('query');
+      if (queryParam) {
+        try {
+          const filterConditions = JSON.parse(decodeURIComponent(queryParam));
+          const { whereConditions: filterWhere, params: filterParams } = buildFilterConditions(filterConditions);
+          whereConditions.push(...filterWhere);
+          params.push(...filterParams);
+        } catch (e) {
+          console.error('Error parsing filter conditions:', e);
+        }
+      }
+
+      // Legacy filter support (for backward compatibility)
       const search = searchParams.get('search');
       if (search) {
         whereConditions.push('(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR (cp.current_company IS NOT NULL AND cp.current_company LIKE ?))');

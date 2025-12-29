@@ -110,11 +110,23 @@ const Dashboard = () => {
               if (isClickable) {
                 try {
                   const config = JSON.parse(kpi.query_config);
-                  if (config.type === 'candidate_filter' && config.filters) {
+                  if (config.type === 'candidate_filter') {
                     const params = new URLSearchParams();
-                    Object.entries(config.filters).forEach(([key, value]) => {
-                      if (value) params.set(key, value);
-                    });
+                    // Use new conditions format if available, fallback to old filters format
+                    if (config.conditions && Array.isArray(config.conditions)) {
+                      params.set('query', encodeURIComponent(JSON.stringify(config.conditions)));
+                    } else if (config.filters) {
+                      // Legacy format - convert to new format for backward compatibility
+                      const conditions = [];
+                      Object.entries(config.filters).forEach(([key, value]) => {
+                        if (value) {
+                          conditions.push({ field: key, value: String(value), operator: 'like' });
+                        }
+                      });
+                      if (conditions.length > 0) {
+                        params.set('query', encodeURIComponent(JSON.stringify(conditions)));
+                      }
+                    }
                     navigate(`/candidates?${params.toString()}`);
                   }
                 } catch (e) {

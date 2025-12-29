@@ -24,6 +24,8 @@ const Candidates = () => {
   
   // Dynamic filter state - array of filter conditions
   const [filterConditions, setFilterConditions] = useState([]);
+  // Local state for input values (to prevent re-renders on every keystroke)
+  const [localFilterValues, setLocalFilterValues] = useState({});
   
   // Available filter fields with their types
   const filterFields = [
@@ -93,6 +95,7 @@ const Candidates = () => {
       try {
         const conditions = JSON.parse(decodeURIComponent(queryParam));
         setFilterConditions(conditions);
+        setLocalFilterValues({}); // Clear any local values when initializing from URL
         setShowFilters(true);
       } catch (e) {
         console.error('Error parsing filter conditions from URL:', e);
@@ -106,16 +109,7 @@ const Candidates = () => {
     
     const trimmed = value.trim();
     
-    // Check for comparison operators: >, <, >=, <=
-    const comparisonMatch = trimmed.match(/^(.+?)\s*(>=|<=|>|<)\s*(.+)$/);
-    if (comparisonMatch) {
-      return {
-        operator: comparisonMatch[2],
-        value: comparisonMatch[3].trim()
-      };
-    }
-    
-    // Check for LIKE pattern: "like Data%"
+    // Check for LIKE pattern first (before comparison operators): "like Data%"
     const likeMatch = trimmed.match(/^like\s+(.+)$/i);
     if (likeMatch) {
       return {
@@ -124,7 +118,7 @@ const Candidates = () => {
       };
     }
     
-    // Check for exact match: "=value" or just "value"
+    // Check for exact match: "=value"
     const exactMatch = trimmed.match(/^=\s*(.+)$/);
     if (exactMatch) {
       return {
@@ -133,9 +127,18 @@ const Candidates = () => {
       };
     }
     
-    // Default: exact match or LIKE (for text fields)
+    // Check for comparison operators at the start: ">1", "<5", ">=10", "<=20"
+    const comparisonMatch = trimmed.match(/^(>=|<=|>|<)\s*(.+)$/);
+    if (comparisonMatch) {
+      return {
+        operator: comparisonMatch[1],
+        value: comparisonMatch[2].trim()
+      };
+    }
+    
+    // Default: LIKE for text fields (contains search)
     return {
-      operator: 'like', // Default to LIKE for text fields, can be overridden
+      operator: 'like', // Default to LIKE for text fields
       value: trimmed
     };
   };
@@ -175,18 +178,36 @@ const Candidates = () => {
     }
   );
 
-  // Apply filters to URL (skip initial mount to avoid overwriting URL params)
+  // Debounce URL updates to prevent page refresh on every keystroke
   const isInitialMount = useRef(true);
+  const urlUpdateTimeout = useRef(null);
+  
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
     }
-    const newParams = new URLSearchParams();
-    if (filterConditions.length > 0) {
-      newParams.set('query', encodeURIComponent(JSON.stringify(filterConditions)));
+    
+    // Clear existing timeout
+    if (urlUpdateTimeout.current) {
+      clearTimeout(urlUpdateTimeout.current);
     }
-    setSearchParams(newParams, { replace: true });
+    
+    // Debounce URL update by 500ms
+    urlUpdateTimeout.current = setTimeout(() => {
+      const newParams = new URLSearchParams();
+      if (filterConditions.length > 0 && filterConditions.some(f => f.field && f.value)) {
+        newParams.set('query', encodeURIComponent(JSON.stringify(filterConditions)));
+      }
+      setSearchParams(newParams, { replace: true });
+    }, 500);
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (urlUpdateTimeout.current) {
+        clearTimeout(urlUpdateTimeout.current);
+      }
+    };
   }, [filterConditions, setSearchParams]);
 
   const handleAddFilter = () => {
@@ -194,45 +215,97 @@ const Candidates = () => {
   };
 
   const handleRemoveFilter = (index) => {
+    // Clean up local value for this filter
+    const inputKey = `filter-${index}-value`;
+    if (filterValueTimeout.current[inputKey]) {
+      clearTimeout(filterValueTimeout.current[inputKey]);
+      delete filterValueTimeout.current[inputKey];
+    }
+    setLocalFilterValues(prev => {
+      const newVals = { ...prev };
+      delete newVals[inputKey];
+      return newVals;
+    });
     setFilterConditions(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Debounce timer for filter value updates
+  const filterValueTimeout = useRef({});
+  
   const handleFilterChange = (index, field, value) => {
-    setFilterConditions(prev => {
-      const updated = [...prev];
+    // For value field, use local state and debounce the update
+    if (field === 'value') {
+      const inputKey = `filter-${index}-value`;
+      setLocalFilterValues(prev => ({ ...prev, [inputKey]: value }));
       
-      if (field === 'value') {
-        // Auto-detect operator from value for text fields
-        const fieldDef = filterFields.find(f => f.value === updated[index].field);
-        if (fieldDef && fieldDef.type === 'text') {
-          const parsed = parseQueryValue(value);
-          if (parsed) {
-            updated[index] = { 
-              ...updated[index], 
-              operator: parsed.operator,
-              value: parsed.value
-            };
+      // Clear existing timeout for this input
+      if (filterValueTimeout.current[inputKey]) {
+        clearTimeout(filterValueTimeout.current[inputKey]);
+      }
+      
+      // Debounce the actual filter condition update
+      filterValueTimeout.current[inputKey] = setTimeout(() => {
+        setFilterConditions(prev => {
+          const updated = [...prev];
+          const fieldDef = filterFields.find(f => f.value === updated[index].field);
+          
+          if (fieldDef && fieldDef.type === 'text') {
+            const parsed = parseQueryValue(value);
+            if (parsed) {
+              updated[index] = { 
+                ...updated[index], 
+                operator: parsed.operator,
+                value: parsed.value
+              };
+            } else {
+              updated[index] = { ...updated[index], value };
+            }
           } else {
             updated[index] = { ...updated[index], value };
           }
-        } else {
-          updated[index] = { ...updated[index], value };
-        }
-      } else {
+          
+          return updated;
+        });
+      }, 300);
+    } else {
+      // For non-value fields (field selection, operator), update immediately
+      setFilterConditions(prev => {
+        const updated = [...prev];
         updated[index] = { ...updated[index], [field]: value };
         
         // Reset value when field changes
         if (field === 'field') {
           updated[index].value = '';
           updated[index].operator = 'like';
+          // Clear local value for this input
+          const inputKey = `filter-${index}-value`;
+          setLocalFilterValues(prev => {
+            const newVals = { ...prev };
+            delete newVals[inputKey];
+            return newVals;
+          });
         }
-      }
-      
-      return updated;
-    });
+        
+        return updated;
+      });
+    }
+  };
+  
+  // Get local value for input (or use actual value if no local value)
+  const getFilterValue = (index, actualValue) => {
+    const inputKey = `filter-${index}-value`;
+    return localFilterValues[inputKey] !== undefined ? localFilterValues[inputKey] : (actualValue || '');
   };
 
   const handleClearFilters = () => {
+    // Clean up all timeout refs
+    Object.keys(filterValueTimeout.current).forEach(key => {
+      if (filterValueTimeout.current[key]) {
+        clearTimeout(filterValueTimeout.current[key]);
+      }
+    });
+    filterValueTimeout.current = {};
+    setLocalFilterValues({});
     setFilterConditions([]);
     setSearchParams({}, { replace: true });
   };
@@ -634,15 +707,15 @@ const Candidates = () => {
               <FiSave /> Save as KPI
             </button>
           )}
-          {user?.role === 'admin' && (
-            <button 
-              className="btn btn-primary"
-              onClick={() => setShowAddModal(true)}
+        {user?.role === 'admin' && (
+          <button 
+            className="btn btn-primary"
+            onClick={() => setShowAddModal(true)}
               style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <FiPlus /> Add Candidate
-            </button>
-          )}
+          >
+            <FiPlus /> Add Candidate
+          </button>
+        )}
         </div>
       </div>
 
@@ -729,7 +802,7 @@ const Candidates = () => {
                             <input
                               type="number"
                               placeholder="Value"
-                              value={condition.value}
+                              value={getFilterValue(index, condition.value)}
                               onChange={(e) => handleFilterChange(index, 'value', e.target.value)}
                             />
                           </div>
@@ -738,7 +811,7 @@ const Candidates = () => {
                             <input
                               type="text"
                               placeholder="Value (e.g., test, like Data%, =exact)"
-                              value={condition.value}
+                              value={getFilterValue(index, condition.value)}
                               onChange={(e) => handleFilterChange(index, 'value', e.target.value)}
                             />
                             <small className="filter-hint">

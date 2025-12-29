@@ -4,6 +4,7 @@
 
 import { query, queryOne, execute } from '../utils/db.js';
 import { addCorsHeaders } from '../utils/cors.js';
+import { buildFilterConditions } from './candidates.js';
 
 export async function handleKPIs(request, env, user) {
   const url = new URL(request.url);
@@ -157,89 +158,96 @@ export async function handleKPIs(request, env, user) {
                 break;
 
               case 'custom_filter':
-                // Parse query_config to get filters
+                // Parse query_config to get filter conditions
                 try {
                   const queryConfig = kpi.query_config ? JSON.parse(kpi.query_config) : null;
-                  if (queryConfig && queryConfig.type === 'candidate_filter' && queryConfig.filters) {
-                    // Build filter query similar to candidates endpoint
+                  if (queryConfig && queryConfig.type === 'candidate_filter') {
                     let whereConditions = ["u.role = 'candidate'"];
                     const filterParams = [];
 
-                    const filters = queryConfig.filters;
-                    
-                    if (filters.search) {
-                      whereConditions.push('(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR cp.current_company LIKE ?)');
-                      const searchTerm = `%${filters.search}%`;
-                      filterParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
-                    }
+                    // Use new conditions format if available, fallback to old filters format for backward compatibility
+                    if (queryConfig.conditions && Array.isArray(queryConfig.conditions)) {
+                      const filterResult = buildFilterConditions(queryConfig.conditions);
+                      whereConditions.push(...filterResult.whereConditions);
+                      filterParams.push(...filterResult.params);
+                    } else if (queryConfig.filters) {
+                      // Legacy format support
+                      const filters = queryConfig.filters;
+                      
+                      if (filters.search) {
+                        whereConditions.push('(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR cp.current_company LIKE ?)');
+                        const searchTerm = `%${filters.search}%`;
+                        filterParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
+                      }
 
-                    if (filters.city) {
-                      whereConditions.push('cp.city LIKE ?');
-                      filterParams.push(`%${filters.city}%`);
-                    }
+                      if (filters.city) {
+                        whereConditions.push('cp.city LIKE ?');
+                        filterParams.push(`%${filters.city}%`);
+                      }
 
-                    if (filters.state) {
-                      whereConditions.push('cp.state LIKE ?');
-                      filterParams.push(`%${filters.state}%`);
-                    }
+                      if (filters.state) {
+                        whereConditions.push('cp.state LIKE ?');
+                        filterParams.push(`%${filters.state}%`);
+                      }
 
-                    if (filters.country) {
-                      whereConditions.push('cp.country LIKE ?');
-                      filterParams.push(`%${filters.country}%`);
-                    }
+                      if (filters.country) {
+                        whereConditions.push('cp.country LIKE ?');
+                        filterParams.push(`%${filters.country}%`);
+                      }
 
-                    if (filters.current_job_title) {
-                      whereConditions.push('cp.current_job_title LIKE ?');
-                      filterParams.push(`%${filters.current_job_title}%`);
-                    }
+                      if (filters.current_job_title) {
+                        whereConditions.push('cp.current_job_title LIKE ?');
+                        filterParams.push(`%${filters.current_job_title}%`);
+                      }
 
-                    if (filters.current_company) {
-                      whereConditions.push('cp.current_company LIKE ?');
-                      filterParams.push(`%${filters.current_company}%`);
-                    }
+                      if (filters.current_company) {
+                        whereConditions.push('cp.current_company LIKE ?');
+                        filterParams.push(`%${filters.current_company}%`);
+                      }
 
-                    if (filters.years_of_experience_min) {
-                      whereConditions.push('cp.years_of_experience >= ?');
-                      filterParams.push(parseInt(filters.years_of_experience_min));
-                    }
+                      if (filters.years_of_experience_min) {
+                        whereConditions.push('cp.years_of_experience >= ?');
+                        filterParams.push(parseInt(filters.years_of_experience_min));
+                      }
 
-                    if (filters.years_of_experience_max) {
-                      whereConditions.push('cp.years_of_experience <= ?');
-                      filterParams.push(parseInt(filters.years_of_experience_max));
-                    }
+                      if (filters.years_of_experience_max) {
+                        whereConditions.push('cp.years_of_experience <= ?');
+                        filterParams.push(parseInt(filters.years_of_experience_max));
+                      }
 
-                    if (filters.availability) {
-                      whereConditions.push('cp.availability = ?');
-                      filterParams.push(filters.availability);
-                    }
+                      if (filters.availability) {
+                        whereConditions.push('cp.availability = ?');
+                        filterParams.push(filters.availability);
+                      }
 
-                    if (filters.work_authorization) {
-                      whereConditions.push('cp.work_authorization LIKE ?');
-                      filterParams.push(`%${filters.work_authorization}%`);
-                    }
+                      if (filters.work_authorization) {
+                        whereConditions.push('cp.work_authorization LIKE ?');
+                        filterParams.push(`%${filters.work_authorization}%`);
+                      }
 
-                    if (filters.willing_to_relocate === 'true') {
-                      whereConditions.push('cp.willing_to_relocate = 1');
-                    } else if (filters.willing_to_relocate === 'false') {
-                      whereConditions.push('(cp.willing_to_relocate = 0 OR cp.willing_to_relocate IS NULL)');
-                    }
+                      if (filters.willing_to_relocate === 'true') {
+                        whereConditions.push('cp.willing_to_relocate = 1');
+                      } else if (filters.willing_to_relocate === 'false') {
+                        whereConditions.push('(cp.willing_to_relocate = 0 OR cp.willing_to_relocate IS NULL)');
+                      }
 
-                    if (filters.has_resume === 'true') {
-                      whereConditions.push('(SELECT COUNT(*) FROM resumes r WHERE r.user_id = u.id) > 0');
-                    } else if (filters.has_resume === 'false') {
-                      whereConditions.push('(SELECT COUNT(*) FROM resumes r WHERE r.user_id = u.id) = 0');
-                    }
+                      if (filters.has_resume === 'true') {
+                        whereConditions.push('(SELECT COUNT(*) FROM resumes r WHERE r.user_id = u.id) > 0');
+                      } else if (filters.has_resume === 'false') {
+                        whereConditions.push('(SELECT COUNT(*) FROM resumes r WHERE r.user_id = u.id) = 0');
+                      }
 
-                    if (filters.has_matches === 'true') {
-                      whereConditions.push('(SELECT COUNT(*) FROM job_matches jm WHERE jm.candidate_id = u.id) > 0');
-                    } else if (filters.has_matches === 'false') {
-                      whereConditions.push('(SELECT COUNT(*) FROM job_matches jm WHERE jm.candidate_id = u.id) = 0');
-                    }
+                      if (filters.has_matches === 'true') {
+                        whereConditions.push('(SELECT COUNT(*) FROM job_matches jm WHERE jm.candidate_id = u.id) > 0');
+                      } else if (filters.has_matches === 'false') {
+                        whereConditions.push('(SELECT COUNT(*) FROM job_matches jm WHERE jm.candidate_id = u.id) = 0');
+                      }
 
-                    if (filters.is_active === 'true') {
-                      whereConditions.push('u.is_active = 1');
-                    } else if (filters.is_active === 'false') {
-                      whereConditions.push('u.is_active = 0');
+                      if (filters.is_active === 'true') {
+                        whereConditions.push('u.is_active = 1');
+                      } else if (filters.is_active === 'false') {
+                        whereConditions.push('u.is_active = 0');
+                      }
                     }
 
                     const whereClause = whereConditions.join(' AND ');
