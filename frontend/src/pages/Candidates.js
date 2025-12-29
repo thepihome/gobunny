@@ -512,15 +512,6 @@ const Candidates = () => {
                           {candidate.assignment_status}
                         </span>
                       )}
-                      {user?.role === 'admin' && (
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          onClick={(e) => handleEditCandidate(candidate, e)}
-                          title="Edit candidate"
-                        >
-                          <FiEdit /> Edit
-                        </button>
-                      )}
                     </div>
                   </td>
                 </tr>

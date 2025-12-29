@@ -59,6 +59,18 @@ export async function handleActivityLogs(request, env, user) {
         params.push(entityId);
       }
 
+      // Debug logging
+      console.log('Activity logs query:', {
+        entityType,
+        entityId,
+        search,
+        dateFrom,
+        dateTo,
+        action,
+        limit,
+        offset
+      });
+
       if (action) {
         sql += ' AND al.action = ?';
         params.push(action);
@@ -80,38 +92,6 @@ export async function handleActivityLogs(request, env, user) {
         params.push(dateTo);
       }
 
-      // Get total count for pagination (before adding limit/offset)
-      const countParams = [...params]; // Copy params before adding limit/offset
-      let countSql = `
-        SELECT COUNT(*) as total
-        FROM activity_logs al
-        LEFT JOIN users u ON al.user_id = u.id
-        WHERE 1=1
-      `;
-      
-      // Apply same filters as main query
-      if (entityType) {
-        countSql += ' AND al.entity_type = ?';
-      }
-      if (entityId) {
-        countSql += ' AND al.entity_id = ?';
-      }
-      if (action) {
-        countSql += ' AND al.action = ?';
-      }
-      if (search) {
-        countSql += ' AND (al.description LIKE ? OR al.field_name LIKE ? OR u.first_name || \' \' || u.last_name LIKE ?)';
-      }
-      if (dateFrom) {
-        countSql += ' AND DATE(al.created_at) >= DATE(?)';
-      }
-      if (dateTo) {
-        countSql += ' AND DATE(al.created_at) <= DATE(?)';
-      }
-      
-      const countResult = await query(env, countSql, countParams);
-      const totalCount = countResult[0]?.total || 0;
-
       sql += ' ORDER BY al.created_at DESC LIMIT ? OFFSET ?';
       params.push(limit, offset);
 
@@ -131,13 +111,7 @@ export async function handleActivityLogs(request, env, user) {
 
       return addCorsHeaders(
         new Response(
-          JSON.stringify({
-            logs: parsedLogs,
-            total: totalCount,
-            limit,
-            offset,
-            hasMore: offset + parsedLogs.length < totalCount
-          }),
+          JSON.stringify(parsedLogs),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         ),
         env,

@@ -1,9 +1,9 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
-import { FiEdit, FiSave, FiX, FiClock, FiSearch, FiFilter, FiChevronDown, FiChevronUp, FiRefreshCw, FiAlertCircle } from 'react-icons/fi';
+import { FiEdit, FiSave, FiX, FiClock, FiSearch, FiFilter, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import './CandidateDetails.css';
 
 const CandidateDetails = () => {
@@ -12,125 +12,81 @@ const CandidateDetails = () => {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({});
-  const [logLimit, setLogLimit] = useState(5);
+  const [showAllLogs, setShowAllLogs] = useState(false);
   const [logSearch, setLogSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [logDateFrom, setLogDateFrom] = useState('');
   const [logDateTo, setLogDateTo] = useState('');
   const [logAction, setLogAction] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [logPage, setLogPage] = useState(1);
-  const searchTimeoutRef = useRef(null);
 
   const { data: candidate, isLoading } = useQuery(
     ['candidate', id],
-    () => api.get(`/candidates/${id}`).then(res => res.data),
+    () => api.get(`/candidates/${id}`).then(res => {
+      console.log('Candidate data received:', res.data);
+      console.log('Profile data:', res.data?.profile);
+      return res.data;
+    }),
     {
       onSuccess: (data) => {
         if (data.profile) {
           setProfileData(data.profile);
+          console.log('Profile ID:', data.profile.id);
         }
       }
     }
   );
 
-  // Debounce search input
-  useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    searchTimeoutRef.current = setTimeout(() => {
-      setDebouncedSearch(logSearch);
-      setLogPage(1); // Reset to first page on search
-    }, 300);
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [logSearch]);
-
-  // Validate date range
-  const dateRangeValid = useMemo(() => {
-    if (!logDateFrom || !logDateTo) return true;
-    return new Date(logDateFrom) <= new Date(logDateTo);
-  }, [logDateFrom, logDateTo]);
-
   // Build activity logs query params
   const activityLogsParams = useMemo(() => {
     const params = new URLSearchParams();
-    if (candidate?.profile?.id) {
+    // Use profile id if available, otherwise use user id (candidate id)
+    const entityId = candidate?.profile?.id || candidate?.id;
+    if (entityId) {
       params.append('entity_type', 'candidate_profile');
-      params.append('entity_id', candidate.profile.id);
+      params.append('entity_id', entityId);
     }
-    params.append('limit', String(logLimit));
-    params.append('offset', String((logPage - 1) * logLimit));
-    if (debouncedSearch) params.append('search', debouncedSearch);
+    params.append('limit', showAllLogs ? '100' : '5');
+    if (logSearch) params.append('search', logSearch);
     if (logDateFrom) params.append('date_from', logDateFrom);
     if (logDateTo) params.append('date_to', logDateTo);
     if (logAction) params.append('action', logAction);
     return params.toString();
-  }, [candidate?.profile?.id, logLimit, logPage, debouncedSearch, logDateFrom, logDateTo, logAction]);
+  }, [candidate?.profile?.id, candidate?.id, showAllLogs, logSearch, logDateFrom, logDateTo, logAction]);
 
   // Fetch activity logs
-  const { 
-    data: activityLogsData, 
-    isLoading: isLoadingLogs, 
-    isError: isErrorLogs,
-    error: errorLogs,
-    refetch: refetchLogs 
-  } = useQuery(
-    ['activity-logs', 'candidate_profile', candidate?.profile?.id, activityLogsParams],
+  const { data: activityLogs, isLoading: isLoadingLogs } = useQuery(
+    ['activity-logs', 'candidate_profile', candidate?.profile?.id || candidate?.id, activityLogsParams],
     () => {
-      if (!candidate?.profile?.id) return { logs: [], total: 0, hasMore: false };
+      const entityId = candidate?.profile?.id || candidate?.id;
+      if (!entityId) {
+        console.log('No entity ID available for activity logs');
+        return [];
+      }
+      console.log('Fetching activity logs with params:', activityLogsParams);
       return api.get(`/activity-logs?${activityLogsParams}`)
         .then(res => {
-          // Handle both old format (array) and new format (object)
-          if (Array.isArray(res.data)) {
-            return { logs: res.data, total: res.data.length, hasMore: false };
-          }
-          return res.data;
+          console.log('Activity logs response:', res.data);
+          return Array.isArray(res.data) ? res.data : [];
         })
         .catch((err) => {
           console.error('Error fetching activity logs:', err);
-          throw err;
+          return [];
         });
     },
     {
-      enabled: !!candidate?.profile?.id && (user?.role === 'consultant' || user?.role === 'admin'),
-      keepPreviousData: true,
-      staleTime: 30000, // Cache for 30 seconds
+      enabled: !!(candidate?.profile?.id || candidate?.id) && (user?.role === 'consultant' || user?.role === 'admin'),
+      refetchOnWindowFocus: false
     }
   );
-
-  const activityLogs = activityLogsData?.logs || [];
-  const totalLogs = activityLogsData?.total || 0;
-  const hasMoreLogs = activityLogsData?.hasMore || false;
-
-  // Calculate pagination
-  const canLoadMore = hasMoreLogs && !isLoadingLogs;
 
   const handleClearFilters = () => {
     setLogSearch('');
     setLogDateFrom('');
     setLogDateTo('');
     setLogAction('');
-    setLogPage(1);
-    setLogLimit(5);
   };
 
-  const handleLoadMore = () => {
-    setLogLimit(prev => prev + 10);
-  };
-
-  const handleShowLess = () => {
-    setLogLimit(5);
-    setLogPage(1);
-  };
-
-  const hasActiveFilters = debouncedSearch || logDateFrom || logDateTo || logAction;
-  const showingMoreThanDefault = logLimit > 5;
+  const hasActiveFilters = logSearch || logDateFrom || logDateTo || logAction;
 
   const updateProfileMutation = useMutation(
     (data) => api.post('/candidate-profiles', { user_id: parseInt(id), ...data }),
@@ -593,7 +549,7 @@ const CandidateDetails = () => {
       </div>
 
       {/* Activity History Section */}
-      {(user?.role === 'consultant' || user?.role === 'admin') && candidate?.profile?.id && (
+      {(user?.role === 'consultant' || user?.role === 'admin') && (candidate?.profile?.id || candidate?.id) && (
         <div className="candidate-section activity-history">
           <div className="activity-history-header">
             <h2>
@@ -603,19 +559,25 @@ const CandidateDetails = () => {
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={() => setShowFilters(!showFilters)}
-                aria-label={showFilters ? 'Hide filters' : 'Show filters'}
               >
                 <FiFilter /> {showFilters ? 'Hide Filters' : 'Show Filters'}
               </button>
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() => refetchLogs()}
-                disabled={isLoadingLogs}
-                aria-label="Refresh activity logs"
-                title="Refresh"
-              >
-                <FiRefreshCw className={isLoadingLogs ? 'spinning' : ''} />
-              </button>
+              {!showAllLogs && activityLogs && activityLogs.length >= 5 && (
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setShowAllLogs(true)}
+                >
+                  Show All <FiChevronDown />
+                </button>
+              )}
+              {showAllLogs && (
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setShowAllLogs(false)}
+                >
+                  Show Less <FiChevronUp />
+                </button>
+              )}
             </div>
           </div>
 
@@ -633,22 +595,14 @@ const CandidateDetails = () => {
                     value={logSearch}
                     onChange={(e) => setLogSearch(e.target.value)}
                     className="filter-input"
-                    aria-label="Search activity logs"
                   />
-                  {logSearch !== debouncedSearch && (
-                    <span className="search-indicator">Searching...</span>
-                  )}
                 </div>
                 <div className="filter-group">
                   <label>Action Type</label>
                   <select
                     value={logAction}
-                    onChange={(e) => {
-                      setLogAction(e.target.value);
-                      setLogPage(1);
-                    }}
+                    onChange={(e) => setLogAction(e.target.value)}
                     className="filter-select"
-                    aria-label="Filter by action type"
                   >
                     <option value="">All Actions</option>
                     <option value="create">Create</option>
@@ -664,13 +618,8 @@ const CandidateDetails = () => {
                   <input
                     type="date"
                     value={logDateFrom}
-                    onChange={(e) => {
-                      setLogDateFrom(e.target.value);
-                      setLogPage(1);
-                    }}
+                    onChange={(e) => setLogDateFrom(e.target.value)}
                     className="filter-input"
-                    max={logDateTo || undefined}
-                    aria-label="Filter from date"
                   />
                 </div>
                 <div className="filter-group">
@@ -678,17 +627,9 @@ const CandidateDetails = () => {
                   <input
                     type="date"
                     value={logDateTo}
-                    onChange={(e) => {
-                      setLogDateTo(e.target.value);
-                      setLogPage(1);
-                    }}
-                    className={`filter-input ${!dateRangeValid ? 'error' : ''}`}
-                    min={logDateFrom || undefined}
-                    aria-label="Filter to date"
+                    onChange={(e) => setLogDateTo(e.target.value)}
+                    className="filter-input"
                   />
-                  {!dateRangeValid && (
-                    <span className="error-message">Date To must be after Date From</span>
-                  )}
                 </div>
                 {hasActiveFilters && (
                   <div className="filter-group">
@@ -705,36 +646,22 @@ const CandidateDetails = () => {
             </div>
           )}
 
-          {isErrorLogs ? (
-            <div className="activity-error">
-              <FiAlertCircle />
-              <div>
-                <p><strong>Error loading activity logs</strong></p>
-                <p>{errorLogs?.response?.data?.error || errorLogs?.message || 'An error occurred'}</p>
-                <button className="btn btn-primary btn-sm" onClick={() => refetchLogs()}>
-                  <FiRefreshCw /> Retry
-                </button>
-              </div>
-            </div>
-          ) : isLoadingLogs && !activityLogs ? (
-            <div className="activity-loading">
-              <div className="spinner"></div>
-              <p>Loading activity logs...</p>
-            </div>
+          {isLoadingLogs ? (
+            <p>Loading activity history...</p>
           ) : activityLogs && activityLogs.length > 0 ? (
             <>
               <div className="activity-stats">
                 <span className="activity-count">
-                  Showing {activityLogs.length} of {totalLogs} log{totalLogs !== 1 ? 's' : ''}
+                  Showing {activityLogs.length} log{activityLogs.length !== 1 ? 's' : ''}
                   {hasActiveFilters && ' (filtered)'}
                 </span>
               </div>
-              <div className="activity-list" role="list">
+              <div className="activity-list">
                 {activityLogs.map((log) => (
-                  <div key={log.id} className="activity-item" role="listitem">
+                  <div key={log.id} className="activity-item">
                     <div className="activity-header">
                       <div className="activity-action">
-                        <span className={`activity-badge activity-${log.action}`} aria-label={`Action: ${log.action}`}>
+                        <span className={`activity-badge activity-${log.action}`}>
                           {log.action}
                         </span>
                         {log.description && (
@@ -743,11 +670,9 @@ const CandidateDetails = () => {
                       </div>
                       <div className="activity-meta">
                         {log.user_name && (
-                          <span className="activity-user" title={log.user_email}>
-                            {log.user_name}
-                          </span>
+                          <span className="activity-user">{log.user_name}</span>
                         )}
-                        <span className="activity-time" title={new Date(log.created_at).toISOString()}>
+                        <span className="activity-time">
                           {new Date(log.created_at).toLocaleString()}
                         </span>
                       </div>
@@ -755,62 +680,22 @@ const CandidateDetails = () => {
                     {log.field_name && (
                       <div className="activity-change">
                         <strong>{log.field_name}:</strong>
-                        <span className="change-old" title={log.old_value || 'Empty value'}>
-                          {log.old_value || '(empty)'}
-                        </span>
-                        <span className="change-arrow" aria-label="changed to">→</span>
-                        <span className="change-new" title={log.new_value || 'Empty value'}>
-                          {log.new_value || '(empty)'}
-                        </span>
+                        <span className="change-old">{log.old_value || '(empty)'}</span>
+                        <span className="change-arrow">→</span>
+                        <span className="change-new">{log.new_value || '(empty)'}</span>
                       </div>
                     )}
                   </div>
                 ))}
               </div>
-              {isLoadingLogs && activityLogs.length > 0 && (
-                <div className="activity-loading-more">
-                  <div className="spinner-small"></div>
-                  <span>Loading more...</span>
+              {!showAllLogs && activityLogs.length === 5 && (
+                <div className="activity-more-indicator">
+                  <p>Showing 5 most recent logs. Use "Show All" to see more.</p>
                 </div>
               )}
-              <div className="activity-pagination">
-                {showingMoreThanDefault ? (
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={handleShowLess}
-                    disabled={isLoadingLogs}
-                  >
-                    <FiChevronUp /> Show Less (Top 5)
-                  </button>
-                ) : canLoadMore ? (
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={handleLoadMore}
-                    disabled={isLoadingLogs}
-                  >
-                    <FiChevronDown /> Load More ({Math.min(logLimit + 10, totalLogs)} of {totalLogs})
-                  </button>
-                ) : activityLogs.length < totalLogs ? (
-                  <span className="activity-pagination-info">
-                    Showing all {activityLogs.length} logs
-                  </span>
-                ) : null}
-              </div>
             </>
           ) : (
-            <div className="activity-empty">
-              <FiClock />
-              <p>
-                {hasActiveFilters 
-                  ? 'No activity logs match your filters. Try adjusting your search criteria.'
-                  : 'No activity history available yet.'}
-              </p>
-              {hasActiveFilters && (
-                <button className="btn btn-secondary btn-sm" onClick={handleClearFilters}>
-                  Clear Filters
-                </button>
-              )}
-            </div>
+            <p>No activity history available{hasActiveFilters && ' (try adjusting your filters)'}</p>
           )}
         </div>
       )}
