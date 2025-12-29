@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
-import { FiPlus, FiUser, FiMail, FiPhone, FiEdit, FiTrash2, FiX } from 'react-icons/fi';
+import { FiPlus, FiUser, FiMail, FiPhone, FiTrash2, FiX } from 'react-icons/fi';
 import './Candidates.css';
 
 const Candidates = () => {
@@ -342,79 +342,6 @@ const Candidates = () => {
 
   const handleCandidateClick = (candidate) => {
     navigate(`/candidates/${candidate.id}`);
-  };
-
-  const handleEditCandidate = async (candidate, e) => {
-    e.stopPropagation();
-    
-    try {
-      // Fetch full candidate details including profile and resumes
-      const candidateDetails = await api.get(`/candidates/${candidate.id}`);
-      const profileResponse = await api.get(`/candidate-profiles/${candidate.id}`).catch(() => ({ data: null }));
-
-      const candidateData = candidateDetails.data;
-      const profile = profileResponse.data || {};
-      const resumes = candidateData.resumes || [];
-
-      // Populate form with candidate data
-      setCandidateFormData({
-        email: candidateData.email || '',
-        password: '', // Don't pre-fill password
-        first_name: candidateData.first_name || '',
-        last_name: candidateData.last_name || '',
-        phone: candidateData.phone || '',
-        date_of_birth: profile.date_of_birth || '',
-        address: profile.address || '',
-        city: profile.city || '',
-        state: profile.state || '',
-        country: profile.country || '',
-        zip_code: profile.zip_code || '',
-        linkedin_url: profile.linkedin_url || '',
-        portfolio_url: profile.portfolio_url || '',
-        github_url: profile.github_url || '',
-        current_job_title: profile.current_job_title || '',
-        current_company: profile.current_company || '',
-        years_of_experience: profile.years_of_experience || '',
-        availability: profile.availability || 'available',
-        expected_salary_min: profile.expected_salary_min || '',
-        expected_salary_max: profile.expected_salary_max || '',
-        work_authorization: profile.work_authorization || '',
-        willing_to_relocate: profile.willing_to_relocate || false,
-        preferred_locations: profile.preferred_locations ? profile.preferred_locations.join(', ') : '',
-        summary: profile.summary || '',
-        additional_notes: profile.additional_notes || '',
-      });
-
-      // Set existing resumes
-      const existingResumeFiles = [];
-      const existingResumeData = [];
-      
-      resumes.forEach((resume, index) => {
-        if (index < 3) {
-          existingResumeFiles[index] = null; // Existing resume, no new file
-          existingResumeData[index] = {
-            id: resume.id,
-            skills: resume.skills ? resume.skills.join(', ') : '',
-            experience_years: resume.experience_years || '',
-            education: resume.education || '',
-            summary: resume.summary || '',
-          };
-        }
-      });
-
-      // Fill remaining slots with empty data
-      for (let i = resumes.length; i < 3; i++) {
-        existingResumeData[i] = { skills: '', experience_years: '', education: '', summary: '' };
-      }
-
-      setResumeFiles(existingResumeFiles);
-      setResumeData(existingResumeData);
-      setEditingCandidate(candidate);
-      setShowEditModal(true);
-    } catch (error) {
-      console.error('Error loading candidate for editing:', error);
-      alert('Failed to load candidate details');
-    }
   };
 
   if (isLoading) {
