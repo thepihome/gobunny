@@ -214,8 +214,28 @@ CREATE TABLE IF NOT EXISTS group_permissions (
   UNIQUE(group_id, permission_id)
 );
 
+-- Activity logs table (tracks all dashboard activities)
+CREATE TABLE IF NOT EXISTS activity_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  entity_type TEXT NOT NULL, -- 'candidate_profile', 'user', 'job', 'resume', etc.
+  entity_id INTEGER NOT NULL, -- ID of the entity being modified
+  action TEXT NOT NULL, -- 'create', 'update', 'delete', 'view', etc.
+  field_name TEXT, -- Name of the field being changed (for updates)
+  old_value TEXT, -- Previous value (for updates)
+  new_value TEXT, -- New value (for updates)
+  description TEXT, -- Human-readable description of the change
+  metadata TEXT, -- JSON stored as text for additional context
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_user ON activity_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_entity ON activity_logs(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON activity_logs(created_at);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_job_matches_candidate ON job_matches(candidate_id);

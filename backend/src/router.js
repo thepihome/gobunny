@@ -14,6 +14,7 @@ import { handleUsers } from './routes/users.js';
 import { handleGroups } from './routes/groups.js';
 import { handlePermissions } from './routes/permissions.js';
 import { handleCRM } from './routes/crm.js';
+import { handleActivityLogs } from './routes/activityLogs.js';
 import { authenticate } from './middleware/auth.js';
 import { getCorsHeaders, handleCORS, addCorsHeaders } from './utils/cors.js';
 
@@ -168,6 +169,8 @@ export async function handleRequest(request, env, ctx) {
       response = await handlePermissions(request, env, user);
     } else if (path.startsWith('/api/crm')) {
       response = await handleCRM(request, env, user);
+    } else if (path.startsWith('/api/activity-logs')) {
+      response = await handleActivityLogs(request, env, user);
     } else {
       response = new Response(
         JSON.stringify({ error: 'Not found' }),
