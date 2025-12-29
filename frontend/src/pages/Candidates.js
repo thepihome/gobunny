@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
-import { FiPlus, FiUser, FiMail, FiPhone, FiBriefcase, FiMapPin, FiEdit, FiTrash2, FiX, FiCalendar, FiDollarSign } from 'react-icons/fi';
+import { FiPlus, FiUser, FiMail, FiPhone, FiEdit, FiTrash2, FiX } from 'react-icons/fi';
 import './Candidates.css';
 
 const Candidates = () => {

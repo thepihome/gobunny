@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
 import './Dashboard.css';
 
@@ -82,8 +81,6 @@ const Dashboard = () => {
   if (isLoading) {
     return <div className="loading">Loading dashboard...</div>;
   }
-
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
   return (
     <div className="dashboard">

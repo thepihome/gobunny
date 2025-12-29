@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { FiSettings, FiUser, FiDroplet, FiUsers, FiShield, FiLock, FiSave, FiX, FiPlus, FiEdit, FiTrash2, FiMail, FiPhone, FiCalendar, FiEdit2, FiUserPlus, FiUserMinus, FiInfo } from 'react-icons/fi';
+import { FiSettings, FiUser, FiDroplet, FiUsers, FiShield, FiSave, FiX, FiPlus, FiEdit, FiTrash2, FiMail, FiCalendar, FiEdit2, FiUserPlus, FiUserMinus, FiInfo } from 'react-icons/fi';
 import './Settings.css';
 
 const Settings = () => {
@@ -21,7 +21,7 @@ const Settings = () => {
   });
 
   // Fetch user details
-  const { data: userDetails } = useQuery(
+  useQuery(
     ['user-details', user?.id],
     () => api.get(`/users/${user?.id}`).then(res => res.data),
     {

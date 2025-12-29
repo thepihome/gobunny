@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
-import { FiMapPin, FiDollarSign, FiCalendar, FiLink, FiExternalLink } from 'react-icons/fi';
+import { FiMapPin, FiDollarSign, FiExternalLink } from 'react-icons/fi';
 import './JobDetails.css';
 
 const JobDetails = () => {
