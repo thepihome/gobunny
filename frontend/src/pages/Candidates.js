@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
-import { FiPlus, FiUser, FiMail, FiPhone, FiTrash2, FiX, FiFilter, FiSave, FiArrowUp, FiArrowDown } from 'react-icons/fi';
+import { FiPlus, FiUser, FiMail, FiPhone, FiTrash2, FiX, FiSave, FiArrowUp, FiArrowDown } from 'react-icons/fi';
 import './Candidates.css';
 
 const Candidates = () => {
@@ -96,7 +96,6 @@ const Candidates = () => {
         const conditions = JSON.parse(decodeURIComponent(queryParam));
         setFilterConditions(conditions);
         setLocalFilterValues({}); // Clear any local values when initializing from URL
-        setShowFilters(true);
       } catch (e) {
         console.error('Error parsing filter conditions from URL:', e);
       }
