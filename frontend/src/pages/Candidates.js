@@ -108,7 +108,14 @@ const Candidates = () => {
     () => {
       const endpoint = user?.role === 'admin' ? '/candidates' : '/candidates/assigned';
       const url = filterParams ? `${endpoint}?${filterParams}` : endpoint;
-      return api.get(url).then(res => res.data);
+      console.log('Fetching candidates with URL:', url);
+      return api.get(url).then(res => {
+        console.log('Candidates response:', res.data);
+        return res.data;
+      });
+    },
+    {
+      enabled: !!user?.role
     }
   );
 

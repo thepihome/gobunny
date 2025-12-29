@@ -35,62 +35,62 @@ export async function handleCandidates(request, env, user) {
       // Apply same filters as admin endpoint
       const search = searchParams.get('search');
       if (search) {
-        whereConditions.push('(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR cp.current_company LIKE ?)');
+        whereConditions.push('(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR (cp.current_company IS NOT NULL AND cp.current_company LIKE ?))');
         const searchTerm = `%${search}%`;
         params.push(searchTerm, searchTerm, searchTerm, searchTerm);
       }
 
       const city = searchParams.get('city');
       if (city) {
-        whereConditions.push('cp.city LIKE ?');
+        whereConditions.push('(cp.city IS NOT NULL AND cp.city LIKE ?)');
         params.push(`%${city}%`);
       }
 
       const state = searchParams.get('state');
       if (state) {
-        whereConditions.push('cp.state LIKE ?');
+        whereConditions.push('(cp.state IS NOT NULL AND cp.state LIKE ?)');
         params.push(`%${state}%`);
       }
 
       const country = searchParams.get('country');
       if (country) {
-        whereConditions.push('cp.country LIKE ?');
+        whereConditions.push('(cp.country IS NOT NULL AND cp.country LIKE ?)');
         params.push(`%${country}%`);
       }
 
       const current_job_title = searchParams.get('current_job_title');
       if (current_job_title) {
-        whereConditions.push('cp.current_job_title LIKE ?');
+        whereConditions.push('(cp.current_job_title IS NOT NULL AND cp.current_job_title LIKE ?)');
         params.push(`%${current_job_title}%`);
       }
 
       const current_company = searchParams.get('current_company');
       if (current_company) {
-        whereConditions.push('cp.current_company LIKE ?');
+        whereConditions.push('(cp.current_company IS NOT NULL AND cp.current_company LIKE ?)');
         params.push(`%${current_company}%`);
       }
 
       const years_min = searchParams.get('years_of_experience_min');
       if (years_min) {
-        whereConditions.push('cp.years_of_experience >= ?');
+        whereConditions.push('(cp.years_of_experience IS NOT NULL AND cp.years_of_experience >= ?)');
         params.push(parseInt(years_min));
       }
 
       const years_max = searchParams.get('years_of_experience_max');
       if (years_max) {
-        whereConditions.push('cp.years_of_experience <= ?');
+        whereConditions.push('(cp.years_of_experience IS NOT NULL AND cp.years_of_experience <= ?)');
         params.push(parseInt(years_max));
       }
 
       const availability = searchParams.get('availability');
       if (availability) {
-        whereConditions.push('cp.availability = ?');
+        whereConditions.push('(cp.availability IS NOT NULL AND cp.availability = ?)');
         params.push(availability);
       }
 
       const work_authorization = searchParams.get('work_authorization');
       if (work_authorization) {
-        whereConditions.push('cp.work_authorization LIKE ?');
+        whereConditions.push('(cp.work_authorization IS NOT NULL AND cp.work_authorization LIKE ?)');
         params.push(`%${work_authorization}%`);
       }
 
@@ -116,6 +116,8 @@ export async function handleCandidates(request, env, user) {
       }
 
       const whereClause = whereConditions.join(' AND ');
+      console.log('Assigned candidates SQL WHERE clause:', whereClause);
+      console.log('Assigned candidates SQL params:', params);
 
       const candidates = await query(
         env,
@@ -142,9 +144,11 @@ export async function handleCandidates(request, env, user) {
         params
       );
 
+      console.log('Assigned candidates query result count:', candidates?.length || 0);
+
       return addCorsHeaders(
         new Response(
-          JSON.stringify(candidates),
+          JSON.stringify(candidates || []),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         ),
         env,
@@ -152,9 +156,10 @@ export async function handleCandidates(request, env, user) {
       );
     } catch (error) {
       console.error('Error fetching assigned candidates:', error);
+      console.error('Error stack:', error.stack);
       return addCorsHeaders(
         new Response(
-          JSON.stringify({ error: 'Server error' }),
+          JSON.stringify({ error: 'Server error', details: error.message }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
         ),
         env,
@@ -180,6 +185,8 @@ export async function handleCandidates(request, env, user) {
     try {
       const { searchParams } = url;
       
+      console.log('Candidates filter params:', Array.from(searchParams.entries()));
+      
       // Build WHERE clause with filters
       let whereConditions = ["u.role = 'candidate'"];
       const params = [];
@@ -187,67 +194,67 @@ export async function handleCandidates(request, env, user) {
       // Search filter (name, email, company)
       const search = searchParams.get('search');
       if (search) {
-        whereConditions.push('(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR cp.current_company LIKE ?)');
+        whereConditions.push('(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR (cp.current_company IS NOT NULL AND cp.current_company LIKE ?))');
         const searchTerm = `%${search}%`;
         params.push(searchTerm, searchTerm, searchTerm, searchTerm);
       }
 
-      // Location filters
+      // Location filters (handle NULL profiles)
       const city = searchParams.get('city');
       if (city) {
-        whereConditions.push('cp.city LIKE ?');
+        whereConditions.push('(cp.city IS NOT NULL AND cp.city LIKE ?)');
         params.push(`%${city}%`);
       }
 
       const state = searchParams.get('state');
       if (state) {
-        whereConditions.push('cp.state LIKE ?');
+        whereConditions.push('(cp.state IS NOT NULL AND cp.state LIKE ?)');
         params.push(`%${state}%`);
       }
 
       const country = searchParams.get('country');
       if (country) {
-        whereConditions.push('cp.country LIKE ?');
+        whereConditions.push('(cp.country IS NOT NULL AND cp.country LIKE ?)');
         params.push(`%${country}%`);
       }
 
       // Job filters
       const current_job_title = searchParams.get('current_job_title');
       if (current_job_title) {
-        whereConditions.push('cp.current_job_title LIKE ?');
+        whereConditions.push('(cp.current_job_title IS NOT NULL AND cp.current_job_title LIKE ?)');
         params.push(`%${current_job_title}%`);
       }
 
       const current_company = searchParams.get('current_company');
       if (current_company) {
-        whereConditions.push('cp.current_company LIKE ?');
+        whereConditions.push('(cp.current_company IS NOT NULL AND cp.current_company LIKE ?)');
         params.push(`%${current_company}%`);
       }
 
       // Experience filters
       const years_min = searchParams.get('years_of_experience_min');
       if (years_min) {
-        whereConditions.push('cp.years_of_experience >= ?');
+        whereConditions.push('(cp.years_of_experience IS NOT NULL AND cp.years_of_experience >= ?)');
         params.push(parseInt(years_min));
       }
 
       const years_max = searchParams.get('years_of_experience_max');
       if (years_max) {
-        whereConditions.push('cp.years_of_experience <= ?');
+        whereConditions.push('(cp.years_of_experience IS NOT NULL AND cp.years_of_experience <= ?)');
         params.push(parseInt(years_max));
       }
 
       // Availability
       const availability = searchParams.get('availability');
       if (availability) {
-        whereConditions.push('cp.availability = ?');
+        whereConditions.push('(cp.availability IS NOT NULL AND cp.availability = ?)');
         params.push(availability);
       }
 
       // Work authorization
       const work_authorization = searchParams.get('work_authorization');
       if (work_authorization) {
-        whereConditions.push('cp.work_authorization LIKE ?');
+        whereConditions.push('(cp.work_authorization IS NOT NULL AND cp.work_authorization LIKE ?)');
         params.push(`%${work_authorization}%`);
       }
 
@@ -284,6 +291,8 @@ export async function handleCandidates(request, env, user) {
       }
 
       const whereClause = whereConditions.join(' AND ');
+      console.log('SQL WHERE clause:', whereClause);
+      console.log('SQL params:', params);
 
       const candidates = await query(
         env,
@@ -309,9 +318,11 @@ export async function handleCandidates(request, env, user) {
         params
       );
 
+      console.log('Candidates query result count:', candidates?.length || 0);
+
       return addCorsHeaders(
         new Response(
-          JSON.stringify(candidates),
+          JSON.stringify(candidates || []),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         ),
         env,
@@ -319,9 +330,10 @@ export async function handleCandidates(request, env, user) {
       );
     } catch (error) {
       console.error('Error fetching candidates:', error);
+      console.error('Error stack:', error.stack);
       return addCorsHeaders(
         new Response(
-          JSON.stringify({ error: 'Server error' }),
+          JSON.stringify({ error: 'Server error', details: error.message }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
         ),
         env,
