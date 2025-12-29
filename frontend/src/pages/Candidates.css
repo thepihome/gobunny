@@ -305,7 +305,137 @@
   margin-bottom: 0;
 }
 
-/* Filter Panel */
+/* Compact Inline Filter Bar */
+.compact-filters-bar {
+  background: white;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+}
+
+.compact-filters-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.compact-filter-conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+}
+
+.compact-filter-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: #f8f9fa;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+}
+
+.compact-filter-field,
+.compact-filter-operator,
+.compact-filter-value {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+  background: white;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.compact-filter-field {
+  min-width: 140px;
+}
+
+.compact-filter-operator {
+  width: 60px;
+  text-align: center;
+}
+
+.compact-filter-value {
+  min-width: 150px;
+  flex: 1;
+}
+
+.compact-filter-field:focus,
+.compact-filter-operator:focus,
+.compact-filter-value:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.compact-filter-remove {
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.compact-filter-remove:hover {
+  background: #f8d7da;
+}
+
+.compact-filter-add,
+.compact-filter-clear {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 4px;
+  border: 1px solid;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.compact-filter-add {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.compact-filter-add:hover {
+  background: #0056b3;
+  border-color: #0056b3;
+}
+
+.compact-filter-clear {
+  background: white;
+  color: #6c757d;
+  border-color: #6c757d;
+}
+
+.compact-filter-clear:hover {
+  background: #6c757d;
+  color: white;
+}
+
+.compact-filters-info {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e0e0e0;
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+/* Legacy Filter Panel (kept for backward compatibility) */
 .candidates-filters {
   background: white;
   border-radius: 8px;

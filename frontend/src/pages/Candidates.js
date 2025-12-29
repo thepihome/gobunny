@@ -14,7 +14,7 @@ const Candidates = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingCandidate, setEditingCandidate] = useState(null);
-  const [showFilters, setShowFilters] = useState(false);
+  // Removed showFilters state - filters are now always visible in compact form
   const [showSaveKpiModal, setShowSaveKpiModal] = useState(false);
   const [kpiName, setKpiName] = useState('');
   
@@ -143,21 +143,41 @@ const Candidates = () => {
     };
   };
 
-  // Build query params for filters
-  const filterParams = useMemo(() => {
+  // Debounced filter params for API calls (prevents refetch on every keystroke)
+  const [debouncedFilterParams, setDebouncedFilterParams] = useState('');
+  const filterParamsTimeout = useRef(null);
+
+  useEffect(() => {
+    // Clear existing timeout
+    if (filterParamsTimeout.current) {
+      clearTimeout(filterParamsTimeout.current);
+    }
+    
+    // Build filter params
     const params = new URLSearchParams();
-    if (filterConditions.length > 0) {
+    if (filterConditions.length > 0 && filterConditions.some(f => f.field && f.value)) {
       params.append('query', encodeURIComponent(JSON.stringify(filterConditions)));
     }
-    return params.toString();
+    const paramsString = params.toString();
+    
+    // Debounce the API call by 500ms
+    filterParamsTimeout.current = setTimeout(() => {
+      setDebouncedFilterParams(paramsString);
+    }, 500);
+    
+    return () => {
+      if (filterParamsTimeout.current) {
+        clearTimeout(filterParamsTimeout.current);
+      }
+    };
   }, [filterConditions]);
 
   // Get candidates based on role with filters
   const { data: candidates, isLoading } = useQuery(
-    ['candidates', user?.role, filterParams],
+    ['candidates', user?.role, debouncedFilterParams],
     () => {
       const endpoint = user?.role === 'admin' ? '/candidates' : '/candidates/assigned';
-      const url = filterParams ? `${endpoint}?${filterParams}` : endpoint;
+      const url = debouncedFilterParams ? `${endpoint}?${debouncedFilterParams}` : endpoint;
       console.log('Fetching candidates with URL:', url);
       return api.get(url).then(res => {
         console.log('Candidates response:', res.data);
@@ -165,7 +185,9 @@ const Candidates = () => {
       });
     },
     {
-      enabled: !!user?.role
+      enabled: !!user?.role,
+      refetchOnWindowFocus: false,
+      staleTime: 30000 // Consider data fresh for 30 seconds
     }
   );
 
@@ -691,13 +713,6 @@ const Candidates = () => {
       <div className="page-header">
         <h1>{user?.role === 'admin' ? 'All Candidates' : 'Assigned Candidates'}</h1>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <button 
-            className="btn btn-secondary"
-            onClick={() => setShowFilters(!showFilters)}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
-            <FiFilter /> {showFilters ? 'Hide' : 'Show'} Filters
-          </button>
           {hasActiveFilters && (
             <button 
               className="btn btn-primary"
@@ -719,129 +734,130 @@ const Candidates = () => {
         </div>
       </div>
 
-      {/* Filter Panel */}
-      {showFilters && (
-        <div className="candidates-filters">
-          <div className="filters-header">
-            <h3>Filters</h3>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <button className="btn btn-sm btn-primary" onClick={handleAddFilter}>
-                <FiPlus /> Add Filter
-              </button>
-              {hasActiveFilters && (
-                <button className="btn btn-sm btn-secondary" onClick={handleClearFilters}>
-                  Clear All
-                </button>
-              )}
-            </div>
-          </div>
-          
+      {/* Compact Inline Filter Section */}
+      <div className="compact-filters-bar">
+        <div className="compact-filters-content">
           {filterConditions.length === 0 ? (
-            <div className="filters-empty">
-              <p>No filters applied. Click "Add Filter" to start filtering candidates.</p>
-              <p className="filter-hint">
-                <strong>Query Syntax:</strong> Use simple queries like <code>name=test</code>, <code>role like Data%</code>, or <code>year>1</code>
-              </p>
+            <div className="compact-filter-row">
+              <select
+                className="compact-filter-field"
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    const fieldDef = filterFields.find(f => f.value === e.target.value);
+                    setFilterConditions([{ 
+                      field: e.target.value, 
+                      value: '', 
+                      operator: fieldDef?.type === 'number' ? '=' : 'like' 
+                    }]);
+                  }
+                }}
+              >
+                <option value="">Quick Filter: Select Field</option>
+                {filterFields.map(field => (
+                  <option key={field.value} value={field.value}>{field.label}</option>
+                ))}
+              </select>
             </div>
           ) : (
-            <div className="filter-conditions">
+            <div className="compact-filter-conditions">
               {filterConditions.map((condition, index) => {
                 const fieldDef = filterFields.find(f => f.value === condition.field);
                 return (
-                  <div key={index} className="filter-condition">
-                    <div className="filter-condition-field">
-                      <select
-                        value={condition.field}
-                        onChange={(e) => handleFilterChange(index, 'field', e.target.value)}
-                      >
-                        <option value="">Select Field</option>
-                        {filterFields.map(field => (
-                          <option key={field.value} value={field.value}>{field.label}</option>
-                        ))}
-                      </select>
-                    </div>
+                  <div key={index} className="compact-filter-row">
+                    <select
+                      className="compact-filter-field"
+                      value={condition.field}
+                      onChange={(e) => handleFilterChange(index, 'field', e.target.value)}
+                    >
+                      <option value="">Field</option>
+                      {filterFields.map(field => (
+                        <option key={field.value} value={field.value}>{field.label}</option>
+                      ))}
+                    </select>
                     
                     {fieldDef && (
                       <>
+                        {fieldDef.type === 'number' && (
+                          <select
+                            className="compact-filter-operator"
+                            value={condition.operator || '='}
+                            onChange={(e) => handleFilterChange(index, 'operator', e.target.value)}
+                          >
+                            <option value="=">=</option>
+                            <option value=">">&gt;</option>
+                            <option value="<">&lt;</option>
+                            <option value=">=">&gt;=</option>
+                            <option value="<=">&lt;=</option>
+                          </select>
+                        )}
                         {fieldDef.type === 'select' ? (
-                          <div className="filter-condition-value">
-                            <select
-                              value={condition.value}
-                              onChange={(e) => handleFilterChange(index, 'value', e.target.value)}
-                            >
-                              <option value="">Select Value</option>
-                              {fieldDef.options.map(opt => (
-                                <option key={opt} value={opt}>{opt}</option>
-                              ))}
-                            </select>
-                          </div>
+                          <select
+                            className="compact-filter-value"
+                            value={condition.value}
+                            onChange={(e) => handleFilterChange(index, 'value', e.target.value)}
+                          >
+                            <option value="">All</option>
+                            {fieldDef.options.map(opt => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
                         ) : fieldDef.type === 'boolean' ? (
-                          <div className="filter-condition-value">
-                            <select
-                              value={condition.value}
-                              onChange={(e) => handleFilterChange(index, 'value', e.target.value)}
-                            >
-                              <option value="">All</option>
-                              <option value="true">Yes</option>
-                              <option value="false">No</option>
-                            </select>
-                          </div>
-                        ) : fieldDef.type === 'number' ? (
-                          <div className="filter-condition-value">
-                            <select
-                              value={condition.operator || '='}
-                              onChange={(e) => handleFilterChange(index, 'operator', e.target.value)}
-                              style={{ width: '80px' }}
-                            >
-                              <option value="=">=</option>
-                              <option value=">">&gt;</option>
-                              <option value="<">&lt;</option>
-                              <option value=">=">&gt;=</option>
-                              <option value="<=">&lt;=</option>
-                            </select>
-                            <input
-                              type="number"
-                              placeholder="Value"
-                              value={getFilterValue(index, condition.value)}
-                              onChange={(e) => handleFilterChange(index, 'value', e.target.value)}
-                            />
-                          </div>
+                          <select
+                            className="compact-filter-value"
+                            value={condition.value}
+                            onChange={(e) => handleFilterChange(index, 'value', e.target.value)}
+                          >
+                            <option value="">All</option>
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                          </select>
                         ) : (
-                          <div className="filter-condition-value">
-                            <input
-                              type="text"
-                              placeholder="Value (e.g., test, like Data%, =exact)"
-                              value={getFilterValue(index, condition.value)}
-                              onChange={(e) => handleFilterChange(index, 'value', e.target.value)}
-                            />
-                            <small className="filter-hint">
-                              Use: <code>=value</code> for exact, <code>like pattern%</code> for pattern, or just text for contains
-                            </small>
-                          </div>
+                          <input
+                            type={fieldDef.type === 'number' ? 'number' : 'text'}
+                            className="compact-filter-value"
+                            placeholder={fieldDef.type === 'number' ? 'Value' : 'Value (e.g., test, =exact, like Data%)'}
+                            value={getFilterValue(index, condition.value)}
+                            onChange={(e) => handleFilterChange(index, 'value', e.target.value)}
+                          />
                         )}
                       </>
                     )}
-                    
                     <button
-                      className="btn-icon btn-delete"
+                      className="btn-icon btn-delete compact-filter-remove"
                       onClick={() => handleRemoveFilter(index)}
-                      title="Remove filter"
+                      title="Remove"
                     >
                       <FiX />
                     </button>
                   </div>
                 );
               })}
-            </div>
-          )}
-          
-          {hasActiveFilters && (
-            <div className="filters-info">
-              <span>Showing {sortedCandidates?.length || 0} candidate(s) with {filterConditions.filter(f => f.field && f.value).length} filter(s) applied</span>
+              <button
+                className="btn btn-sm btn-primary compact-filter-add"
+                onClick={handleAddFilter}
+                title="Add Filter"
+              >
+                <FiPlus />
+              </button>
+              {hasActiveFilters && (
+                <button
+                  className="btn btn-sm btn-secondary compact-filter-clear"
+                  onClick={handleClearFilters}
+                  title="Clear All"
+                >
+                  Clear
+                </button>
+              )}
             </div>
           )}
         </div>
-      )}
+        {hasActiveFilters && (
+          <div className="compact-filters-info">
+            {sortedCandidates?.length || 0} result(s)
+          </div>
+        )}
+      </div>
 
       {/* Save as KPI Modal */}
       {showSaveKpiModal && (
