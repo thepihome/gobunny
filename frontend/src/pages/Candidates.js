@@ -22,23 +22,27 @@ const Candidates = () => {
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
   
-  // Filter state
-  const [filters, setFilters] = useState({
-    search: '',
-    city: '',
-    state: '',
-    country: '',
-    current_job_title: '',
-    current_company: '',
-    years_of_experience_min: '',
-    years_of_experience_max: '',
-    availability: '',
-    work_authorization: '',
-    willing_to_relocate: '',
-    has_resume: '',
-    has_matches: '',
-    is_active: '',
-  });
+  // Dynamic filter state - array of filter conditions
+  const [filterConditions, setFilterConditions] = useState([]);
+  
+  // Available filter fields with their types
+  const filterFields = [
+    { value: 'first_name', label: 'First Name', type: 'text' },
+    { value: 'last_name', label: 'Last Name', type: 'text' },
+    { value: 'email', label: 'Email', type: 'text' },
+    { value: 'phone', label: 'Phone', type: 'text' },
+    { value: 'city', label: 'City', type: 'text' },
+    { value: 'state', label: 'State', type: 'text' },
+    { value: 'country', label: 'Country', type: 'text' },
+    { value: 'current_job_title', label: 'Job Title', type: 'text' },
+    { value: 'secondary_job_title', label: 'Secondary Job Title', type: 'text' },
+    { value: 'current_company', label: 'Company', type: 'text' },
+    { value: 'years_of_experience', label: 'Years of Experience', type: 'number' },
+    { value: 'availability', label: 'Availability', type: 'select', options: ['available', 'not-available', 'available-soon', 'contract-only'] },
+    { value: 'work_authorization', label: 'Work Authorization', type: 'text' },
+    { value: 'willing_to_relocate', label: 'Willing to Relocate', type: 'boolean' },
+    { value: 'is_active', label: 'Status', type: 'boolean' },
+  ];
   const [candidateFormData, setCandidateFormData] = useState({
     // User fields
     email: '',
@@ -84,28 +88,66 @@ const Candidates = () => {
     if (initializedFromUrl.current) return;
     initializedFromUrl.current = true;
     
-    const urlFilters = {};
-    const filterKeys = ['search', 'city', 'state', 'country', 'current_job_title', 'current_company', 
-                       'years_of_experience_min', 'years_of_experience_max', 'availability', 
-                       'work_authorization', 'willing_to_relocate', 'has_resume', 'has_matches', 'is_active'];
-    filterKeys.forEach(key => {
-      const value = searchParams.get(key);
-      if (value) urlFilters[key] = value;
-    });
-    if (Object.keys(urlFilters).length > 0) {
-      setFilters(prev => ({ ...prev, ...urlFilters }));
-      setShowFilters(true);
+    const queryParam = searchParams.get('query');
+    if (queryParam) {
+      try {
+        const conditions = JSON.parse(decodeURIComponent(queryParam));
+        setFilterConditions(conditions);
+        setShowFilters(true);
+      } catch (e) {
+        console.error('Error parsing filter conditions from URL:', e);
+      }
     }
   }, [searchParams]);
+
+  // Parse query syntax (e.g., "name=test", "role like Data%", "year>1")
+  const parseQueryValue = (value) => {
+    if (!value || !value.trim()) return null;
+    
+    const trimmed = value.trim();
+    
+    // Check for comparison operators: >, <, >=, <=
+    const comparisonMatch = trimmed.match(/^(.+?)\s*(>=|<=|>|<)\s*(.+)$/);
+    if (comparisonMatch) {
+      return {
+        operator: comparisonMatch[2],
+        value: comparisonMatch[3].trim()
+      };
+    }
+    
+    // Check for LIKE pattern: "like Data%"
+    const likeMatch = trimmed.match(/^like\s+(.+)$/i);
+    if (likeMatch) {
+      return {
+        operator: 'like',
+        value: likeMatch[1].trim()
+      };
+    }
+    
+    // Check for exact match: "=value" or just "value"
+    const exactMatch = trimmed.match(/^=\s*(.+)$/);
+    if (exactMatch) {
+      return {
+        operator: '=',
+        value: exactMatch[1].trim()
+      };
+    }
+    
+    // Default: exact match or LIKE (for text fields)
+    return {
+      operator: 'like', // Default to LIKE for text fields, can be overridden
+      value: trimmed
+    };
+  };
 
   // Build query params for filters
   const filterParams = useMemo(() => {
     const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value) params.append(key, value);
-    });
+    if (filterConditions.length > 0) {
+      params.append('query', encodeURIComponent(JSON.stringify(filterConditions)));
+    }
     return params.toString();
-  }, [filters]);
+  }, [filterConditions]);
 
   // Get candidates based on role with filters
   const { data: candidates, isLoading } = useQuery(
@@ -141,26 +183,61 @@ const Candidates = () => {
       return;
     }
     const newParams = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value) newParams.set(key, value);
-    });
+    if (filterConditions.length > 0) {
+      newParams.set('query', encodeURIComponent(JSON.stringify(filterConditions)));
+    }
     setSearchParams(newParams, { replace: true });
-  }, [filters, setSearchParams]);
+  }, [filterConditions, setSearchParams]);
 
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+  const handleAddFilter = () => {
+    setFilterConditions(prev => [...prev, { field: '', value: '', operator: 'like' }]);
+  };
+
+  const handleRemoveFilter = (index) => {
+    setFilterConditions(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleFilterChange = (index, field, value) => {
+    setFilterConditions(prev => {
+      const updated = [...prev];
+      
+      if (field === 'value') {
+        // Auto-detect operator from value for text fields
+        const fieldDef = filterFields.find(f => f.value === updated[index].field);
+        if (fieldDef && fieldDef.type === 'text') {
+          const parsed = parseQueryValue(value);
+          if (parsed) {
+            updated[index] = { 
+              ...updated[index], 
+              operator: parsed.operator,
+              value: parsed.value
+            };
+          } else {
+            updated[index] = { ...updated[index], value };
+          }
+        } else {
+          updated[index] = { ...updated[index], value };
+        }
+      } else {
+        updated[index] = { ...updated[index], [field]: value };
+        
+        // Reset value when field changes
+        if (field === 'field') {
+          updated[index].value = '';
+          updated[index].operator = 'like';
+        }
+      }
+      
+      return updated;
+    });
   };
 
   const handleClearFilters = () => {
-    const clearedFilters = Object.keys(filters).reduce((acc, key) => {
-      acc[key] = '';
-      return acc;
-    }, {});
-    setFilters(clearedFilters);
+    setFilterConditions([]);
     setSearchParams({}, { replace: true });
   };
 
-  const hasActiveFilters = Object.values(filters).some(v => v !== '');
+  const hasActiveFilters = filterConditions.length > 0 && filterConditions.some(f => f.field && f.value);
 
   // Handle column sorting
   const handleSort = (column) => {
@@ -229,10 +306,10 @@ const Candidates = () => {
     // Save KPI with filter configuration
     const kpiData = {
       name: kpiName,
-      description: `Filtered candidates: ${Object.entries(filters).filter(([_, v]) => v).map(([k, v]) => `${k}=${v}`).join(', ')}`,
+      description: `Filtered candidates: ${filterConditions.filter(f => f.field && f.value).map(f => `${f.field}=${f.value}`).join(', ')}`,
       metric_type: 'custom_filter',
       display_order: 0,
-      query_config: JSON.stringify({ type: 'candidate_filter', filters })
+      query_config: JSON.stringify({ type: 'candidate_filter', conditions: filterConditions })
     };
     
     api.post('/kpis', kpiData)
@@ -574,155 +651,120 @@ const Candidates = () => {
         <div className="candidates-filters">
           <div className="filters-header">
             <h3>Filters</h3>
-            {hasActiveFilters && (
-              <button className="btn btn-sm btn-secondary" onClick={handleClearFilters}>
-                Clear All
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <button className="btn btn-sm btn-primary" onClick={handleAddFilter}>
+                <FiPlus /> Add Filter
               </button>
-            )}
-          </div>
-          <div className="filters-grid">
-            <div className="filter-group">
-              <label>Search</label>
-              <input
-                type="text"
-                placeholder="Name, email, or company..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
-              />
-            </div>
-            <div className="filter-group">
-              <label>City</label>
-              <input
-                type="text"
-                placeholder="City"
-                value={filters.city}
-                onChange={(e) => handleFilterChange('city', e.target.value)}
-              />
-            </div>
-            <div className="filter-group">
-              <label>State</label>
-              <input
-                type="text"
-                placeholder="State"
-                value={filters.state}
-                onChange={(e) => handleFilterChange('state', e.target.value)}
-              />
-            </div>
-            <div className="filter-group">
-              <label>Country</label>
-              <input
-                type="text"
-                placeholder="Country"
-                value={filters.country}
-                onChange={(e) => handleFilterChange('country', e.target.value)}
-              />
-            </div>
-            <div className="filter-group">
-              <label>Job Title</label>
-              <input
-                type="text"
-                placeholder="Current job title"
-                value={filters.current_job_title}
-                onChange={(e) => handleFilterChange('current_job_title', e.target.value)}
-              />
-            </div>
-            <div className="filter-group">
-              <label>Company</label>
-              <input
-                type="text"
-                placeholder="Current company"
-                value={filters.current_company}
-                onChange={(e) => handleFilterChange('current_company', e.target.value)}
-              />
-            </div>
-            <div className="filter-group">
-              <label>Experience (Min Years)</label>
-              <input
-                type="number"
-                placeholder="Min"
-                value={filters.years_of_experience_min}
-                onChange={(e) => handleFilterChange('years_of_experience_min', e.target.value)}
-              />
-            </div>
-            <div className="filter-group">
-              <label>Experience (Max Years)</label>
-              <input
-                type="number"
-                placeholder="Max"
-                value={filters.years_of_experience_max}
-                onChange={(e) => handleFilterChange('years_of_experience_max', e.target.value)}
-              />
-            </div>
-            <div className="filter-group">
-              <label>Availability</label>
-              <select
-                value={filters.availability}
-                onChange={(e) => handleFilterChange('availability', e.target.value)}
-              >
-                <option value="">All</option>
-                <option value="available">Available</option>
-                <option value="not-available">Not Available</option>
-                <option value="available-soon">Available Soon</option>
-                <option value="contract-only">Contract Only</option>
-              </select>
-            </div>
-            <div className="filter-group">
-              <label>Work Authorization</label>
-              <input
-                type="text"
-                placeholder="e.g., US Citizen, H1B"
-                value={filters.work_authorization}
-                onChange={(e) => handleFilterChange('work_authorization', e.target.value)}
-              />
-            </div>
-            <div className="filter-group">
-              <label>Willing to Relocate</label>
-              <select
-                value={filters.willing_to_relocate}
-                onChange={(e) => handleFilterChange('willing_to_relocate', e.target.value)}
-              >
-                <option value="">All</option>
-                <option value="true">Yes</option>
-                <option value="false">No</option>
-              </select>
-            </div>
-            <div className="filter-group">
-              <label>Has Resume</label>
-              <select
-                value={filters.has_resume}
-                onChange={(e) => handleFilterChange('has_resume', e.target.value)}
-              >
-                <option value="">All</option>
-                <option value="true">Yes</option>
-                <option value="false">No</option>
-              </select>
-            </div>
-            <div className="filter-group">
-              <label>Has Matches</label>
-              <select
-                value={filters.has_matches}
-                onChange={(e) => handleFilterChange('has_matches', e.target.value)}
-              >
-                <option value="">All</option>
-                <option value="true">Yes</option>
-                <option value="false">No</option>
-              </select>
-            </div>
-            <div className="filter-group">
-              <label>Status</label>
-              <select
-                value={filters.is_active}
-                onChange={(e) => handleFilterChange('is_active', e.target.value)}
-              >
-                <option value="">All</option>
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-              </select>
+              {hasActiveFilters && (
+                <button className="btn btn-sm btn-secondary" onClick={handleClearFilters}>
+                  Clear All
+                </button>
+              )}
             </div>
           </div>
+          
+          {filterConditions.length === 0 ? (
+            <div className="filters-empty">
+              <p>No filters applied. Click "Add Filter" to start filtering candidates.</p>
+              <p className="filter-hint">
+                <strong>Query Syntax:</strong> Use simple queries like <code>name=test</code>, <code>role like Data%</code>, or <code>year>1</code>
+              </p>
+            </div>
+          ) : (
+            <div className="filter-conditions">
+              {filterConditions.map((condition, index) => {
+                const fieldDef = filterFields.find(f => f.value === condition.field);
+                return (
+                  <div key={index} className="filter-condition">
+                    <div className="filter-condition-field">
+                      <select
+                        value={condition.field}
+                        onChange={(e) => handleFilterChange(index, 'field', e.target.value)}
+                      >
+                        <option value="">Select Field</option>
+                        {filterFields.map(field => (
+                          <option key={field.value} value={field.value}>{field.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    {fieldDef && (
+                      <>
+                        {fieldDef.type === 'select' ? (
+                          <div className="filter-condition-value">
+                            <select
+                              value={condition.value}
+                              onChange={(e) => handleFilterChange(index, 'value', e.target.value)}
+                            >
+                              <option value="">Select Value</option>
+                              {fieldDef.options.map(opt => (
+                                <option key={opt} value={opt}>{opt}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : fieldDef.type === 'boolean' ? (
+                          <div className="filter-condition-value">
+                            <select
+                              value={condition.value}
+                              onChange={(e) => handleFilterChange(index, 'value', e.target.value)}
+                            >
+                              <option value="">All</option>
+                              <option value="true">Yes</option>
+                              <option value="false">No</option>
+                            </select>
+                          </div>
+                        ) : fieldDef.type === 'number' ? (
+                          <div className="filter-condition-value">
+                            <select
+                              value={condition.operator || '='}
+                              onChange={(e) => handleFilterChange(index, 'operator', e.target.value)}
+                              style={{ width: '80px' }}
+                            >
+                              <option value="=">=</option>
+                              <option value=">">&gt;</option>
+                              <option value="<">&lt;</option>
+                              <option value=">=">&gt;=</option>
+                              <option value="<=">&lt;=</option>
+                            </select>
+                            <input
+                              type="number"
+                              placeholder="Value"
+                              value={condition.value}
+                              onChange={(e) => handleFilterChange(index, 'value', e.target.value)}
+                            />
+                          </div>
+                        ) : (
+                          <div className="filter-condition-value">
+                            <input
+                              type="text"
+                              placeholder="Value (e.g., test, like Data%, =exact)"
+                              value={condition.value}
+                              onChange={(e) => handleFilterChange(index, 'value', e.target.value)}
+                            />
+                            <small className="filter-hint">
+                              Use: <code>=value</code> for exact, <code>like pattern%</code> for pattern, or just text for contains
+                            </small>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
+                    <button
+                      className="btn-icon btn-delete"
+                      onClick={() => handleRemoveFilter(index)}
+                      title="Remove filter"
+                    >
+                      <FiX />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          
           {hasActiveFilters && (
             <div className="filters-info">
-              <span>Showing {candidates?.length || 0} candidate(s) with filters applied</span>
+              <span>Showing {sortedCandidates?.length || 0} candidate(s) with {filterConditions.filter(f => f.field && f.value).length} filter(s) applied</span>
             </div>
           )}
         </div>

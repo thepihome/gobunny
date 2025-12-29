@@ -6,6 +6,101 @@ import { query, queryOne, execute } from '../utils/db.js';
 import { addCorsHeaders } from '../utils/cors.js';
 import { authorize } from '../middleware/auth.js';
 
+// Field mapping: frontend field name -> database column
+const fieldMapping = {
+  'first_name': { table: 'u', column: 'first_name', type: 'text' },
+  'last_name': { table: 'u', column: 'last_name', type: 'text' },
+  'email': { table: 'u', column: 'email', type: 'text' },
+  'phone': { table: 'u', column: 'phone', type: 'text' },
+  'city': { table: 'cp', column: 'city', type: 'text' },
+  'state': { table: 'cp', column: 'state', type: 'text' },
+  'country': { table: 'cp', column: 'country', type: 'text' },
+  'current_job_title': { table: 'cp', column: 'current_job_title', type: 'text' },
+  'secondary_job_title': { table: 'cp', column: 'secondary_job_title', type: 'text' },
+  'current_company': { table: 'cp', column: 'current_company', type: 'text' },
+  'years_of_experience': { table: 'cp', column: 'years_of_experience', type: 'number' },
+  'availability': { table: 'cp', column: 'availability', type: 'text' },
+  'work_authorization': { table: 'cp', column: 'work_authorization', type: 'text' },
+  'willing_to_relocate': { table: 'cp', column: 'willing_to_relocate', type: 'boolean' },
+  'is_active': { table: 'u', column: 'is_active', type: 'boolean' },
+};
+
+// Build WHERE conditions from filter conditions
+function buildFilterConditions(filterConditions, baseTable = 'u') {
+  const whereConditions = [];
+  const params = [];
+  
+  if (!filterConditions || !Array.isArray(filterConditions)) {
+    return { whereConditions, params };
+  }
+  
+  for (const condition of filterConditions) {
+    if (!condition.field || !condition.value) continue;
+    
+    const fieldMap = fieldMapping[condition.field];
+    if (!fieldMap) continue;
+    
+    const { table, column, type } = fieldMap;
+    const operator = condition.operator || 'like';
+    const value = condition.value.trim();
+    
+    if (!value) continue;
+    
+    let sqlCondition = '';
+    let paramValue = value;
+    
+    if (type === 'boolean') {
+      // Boolean fields
+      if (value === 'true' || value === '1') {
+        sqlCondition = `${table}.${column} = 1`;
+      } else if (value === 'false' || value === '0') {
+        sqlCondition = `(${table}.${column} = 0 OR ${table}.${column} IS NULL)`;
+      }
+    } else if (type === 'number') {
+      // Numeric fields with comparison operators
+      const numValue = parseFloat(value);
+      if (isNaN(numValue)) continue;
+      
+      if (operator === '=' || operator === '==') {
+        sqlCondition = `(${table}.${column} IS NOT NULL AND ${table}.${column} = ?)`;
+        params.push(numValue);
+      } else if (operator === '>') {
+        sqlCondition = `(${table}.${column} IS NOT NULL AND ${table}.${column} > ?)`;
+        params.push(numValue);
+      } else if (operator === '<') {
+        sqlCondition = `(${table}.${column} IS NOT NULL AND ${table}.${column} < ?)`;
+        params.push(numValue);
+      } else if (operator === '>=') {
+        sqlCondition = `(${table}.${column} IS NOT NULL AND ${table}.${column} >= ?)`;
+        params.push(numValue);
+      } else if (operator === '<=') {
+        sqlCondition = `(${table}.${column} IS NOT NULL AND ${table}.${column} <= ?)`;
+        params.push(numValue);
+      }
+    } else {
+      // Text fields
+      if (operator === '=' || operator === '==') {
+        sqlCondition = `${table}.${column} = ?`;
+        params.push(value);
+      } else if (operator === 'like') {
+        // Handle LIKE patterns - if value doesn't have %, add % around it
+        let likeValue = value;
+        if (!likeValue.includes('%')) {
+          likeValue = `%${likeValue}%`;
+        }
+        sqlCondition = `(${table}.${column} IS NOT NULL AND ${table}.${column} LIKE ?)`;
+        params.push(likeValue);
+      }
+    }
+    
+    if (sqlCondition) {
+      whereConditions.push(sqlCondition);
+    }
+  }
+  
+  return { whereConditions, params };
+}
+
 export async function handleCandidates(request, env, user) {
   const url = new URL(request.url);
   const path = url.pathname;
@@ -32,7 +127,20 @@ export async function handleCandidates(request, env, user) {
       let whereConditions = ['ca.consultant_id = ?'];
       const params = [user.id];
 
-      // Apply same filters as admin endpoint
+      // Handle dynamic filter conditions
+      const queryParam = searchParams.get('query');
+      if (queryParam) {
+        try {
+          const filterConditions = JSON.parse(decodeURIComponent(queryParam));
+          const { whereConditions: filterWhere, params: filterParams } = buildFilterConditions(filterConditions);
+          whereConditions.push(...filterWhere);
+          params.push(...filterParams);
+        } catch (e) {
+          console.error('Error parsing filter conditions:', e);
+        }
+      }
+
+      // Legacy filter support (for backward compatibility)
       const search = searchParams.get('search');
       if (search) {
         whereConditions.push('(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR (cp.current_company IS NOT NULL AND cp.current_company LIKE ?))');
