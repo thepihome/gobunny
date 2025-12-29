@@ -1,0 +1,26 @@
+# Cloudflare Workers Configuration (for future Workers migration)
+# This is an example file - only needed if migrating backend to Workers
+
+name = "gobunnyy-backend"
+main = "backend/worker.js"
+compatibility_date = "2024-01-01"
+
+[env.production]
+vars = { NODE_ENV = "production" }
+
+# D1 Database binding (if using D1)
+# [[env.production.d1_databases]]
+# binding = "DB"
+# database_name = "job-hunting-db"
+# database_id = "your-database-id"
+
+# R2 Bucket binding (for file uploads)
+# [[env.production.r2_buckets]]
+# binding = "UPLOADS"
+# bucket_name = "resume-uploads"
+
+# Environment variables
+# [env.production.vars]
+# JWT_SECRET = "your-jwt-secret"
+# JWT_EXPIRE = "7d"
+

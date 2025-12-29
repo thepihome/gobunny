@@ -1,0 +1,74 @@
+.matches-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.matches-list {
+  display: grid;
+  gap: 20px;
+}
+
+.match-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.match-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 15px;
+}
+
+.match-header h3 {
+  margin: 0;
+}
+
+.match-header h3 a {
+  color: #333;
+  text-decoration: none;
+}
+
+.match-header h3 a:hover {
+  color: #007bff;
+}
+
+.match-company {
+  color: #666;
+  font-weight: 500;
+  margin: 5px 0;
+}
+
+.match-candidate {
+  color: #999;
+  font-size: 14px;
+  margin: 10px 0;
+}
+
+.match-location {
+  color: #999;
+  font-size: 14px;
+  margin: 5px 0;
+}
+
+.match-details {
+  color: #666;
+  font-size: 14px;
+  margin: 5px 0;
+}
+
+.match-status {
+  margin: 10px 0;
+}
+
+.match-notes {
+  color: #666;
+  font-size: 14px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+
+

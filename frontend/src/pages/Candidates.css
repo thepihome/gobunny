@@ -1,0 +1,300 @@
+.candidates-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.page-header h1 {
+  margin: 0;
+  color: #333;
+}
+
+/* Candidates Table */
+.candidates-table-container {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.candidates-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.candidates-table thead {
+  background-color: #f8f9fa;
+}
+
+.candidates-table th {
+  padding: 15px;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #dee2e6;
+  font-size: 14px;
+}
+
+.candidates-table td {
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+.candidate-row {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.candidate-row:hover {
+  background-color: #f8f9fa;
+  transform: translateX(2px);
+}
+
+.candidate-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.candidate-icon {
+  color: #007bff;
+  flex-shrink: 0;
+}
+
+.candidate-name-cell strong {
+  color: #333;
+  font-size: 15px;
+  transition: color 0.2s;
+}
+
+.candidate-row:hover .candidate-name-cell strong {
+  color: #007bff;
+}
+
+.candidate-email-inline,
+.candidate-phone-inline {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #666;
+  font-size: 14px;
+}
+
+.candidate-position {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.candidate-position strong {
+  color: #333;
+  font-size: 14px;
+}
+
+.candidate-company {
+  color: #666;
+  font-size: 13px;
+}
+
+.candidate-stat {
+  background: #e7f3ff;
+  color: #007bff;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Add Candidate Modal */
+.add-candidate-modal {
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #eee;
+}
+
+.modal-header h2 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #333;
+}
+
+.btn-close-modal {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+  padding: 5px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.btn-close-modal:hover {
+  color: #333;
+}
+
+.add-candidate-form {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.form-section {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.form-section h3 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 18px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #007bff;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+.form-hint {
+  margin: 5px 0 0 0;
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+  margin-top: 10px;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Resume Upload Section */
+.resume-upload-item {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.resume-upload-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.resume-upload-header h4 {
+  margin: 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.resume-upload-item .form-group {
+  margin-bottom: 12px;
+}
+
+.resume-upload-item .form-group:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .add-candidate-modal {
+    max-width: 95%;
+  }
+}

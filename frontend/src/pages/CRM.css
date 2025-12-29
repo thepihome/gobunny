@@ -1,0 +1,56 @@
+.crm-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.crm-list {
+  display: grid;
+  gap: 20px;
+}
+
+.crm-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.crm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 15px;
+}
+
+.crm-header h3 {
+  margin: 0;
+  text-transform: capitalize;
+}
+
+.crm-candidate {
+  color: #666;
+  font-weight: 500;
+  margin: 5px 0;
+}
+
+.crm-date {
+  color: #999;
+  font-size: 14px;
+  margin: 5px 0;
+}
+
+.crm-notes {
+  color: #666;
+  margin: 15px 0;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.crm-followup {
+  color: #007bff;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+

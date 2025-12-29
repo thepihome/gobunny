@@ -1,0 +1,11 @@
+{
+  "build": {
+    "command": "cd frontend && npm install && npm run build",
+    "output_directory": "frontend/build",
+    "root": "/"
+  },
+  "environment_variables": {
+    "REACT_APP_API_URL": "https://your-backend-url.com/api"
+  }
+}
+

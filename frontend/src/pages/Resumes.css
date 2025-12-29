@@ -1,0 +1,52 @@
+.resumes-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.resumes-list {
+  display: grid;
+  gap: 20px;
+}
+
+.resume-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.resume-header {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.resume-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.resume-date {
+  color: #999;
+  font-size: 14px;
+  margin: 5px 0;
+}
+
+.resume-summary {
+  color: #666;
+  margin: 15px 0;
+}
+
+.resume-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 15px 0;
+}
+
+.resume-experience {
+  color: #666;
+  margin: 10px 0;
+}
+
+

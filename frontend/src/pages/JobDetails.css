@@ -1,0 +1,96 @@
+.job-details {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.job-details-card {
+  background: white;
+  border-radius: 8px;
+  padding: 30px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+}
+
+.job-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 20px;
+}
+
+.job-details-header h1 {
+  margin: 0;
+  color: #333;
+}
+
+.job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin: 20px 0;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #666;
+}
+
+.job-section {
+  margin: 30px 0;
+  padding-top: 30px;
+  border-top: 1px solid #eee;
+}
+
+.job-section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.job-section h2 {
+  color: #333;
+  margin-bottom: 15px;
+  font-size: 20px;
+}
+
+.skills-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skill-tag-secondary {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.match-resume {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+}
+
+.match-resume select {
+  flex: 1;
+}
+
+.external-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.external-link-hint {
+  color: #666;
+  font-size: 14px;
+  margin-top: 5px;
+  font-style: italic;
+}
+

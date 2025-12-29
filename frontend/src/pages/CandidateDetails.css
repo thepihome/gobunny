@@ -1,0 +1,137 @@
+.candidate-details {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.candidate-info {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.candidate-info p {
+  margin: 10px 0;
+  color: #666;
+}
+
+.candidate-section {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.candidate-section h2 {
+  color: #333;
+  margin-bottom: 15px;
+  font-size: 20px;
+}
+
+.resumes-list,
+.matches-list,
+.crm-list {
+  display: grid;
+  gap: 15px;
+}
+
+.resume-item,
+.match-item,
+.crm-item {
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.resume-item h4,
+.match-item h4,
+.crm-item h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+.resume-item p,
+.match-item p,
+.crm-item p {
+  margin: 5px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 15px;
+}
+
+.profile-item {
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.profile-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.profile-item strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.profile-item a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.profile-item a:hover {
+  text-decoration: underline;
+}
+
+.profile-item p {
+  margin: 5px 0 0 0;
+  color: #666;
+  line-height: 1.6;
+}
+
+.resume-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.resume-item-header h4 {
+  margin: 0;
+  flex: 1;
+}
+
+.resume-meta {
+  font-size: 12px;
+  color: #999;
+  margin-left: 10px;
+}
+
+.skills-list {
+  margin: 10px 0;
+}
+
+.skills-list strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.skill-tag {
+  display: inline-block;
+  background: #e7f3ff;
+  color: #007bff;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin: 3px 5px 3px 0;
+}
+

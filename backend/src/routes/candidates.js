@@ -1,0 +1,16 @@
+/**
+ * Candidates routes for Cloudflare Workers
+ * Stub implementation - needs full implementation
+ */
+
+import { addCorsHeaders } from '../utils/cors.js';
+
+export async function handleCandidates(request, env, user) {
+  return addCorsHeaders(
+    new Response(
+      JSON.stringify({ error: 'Candidates endpoint not yet fully implemented' }),
+      { status: 501, headers: { 'Content-Type': 'application/json' } }
+    )
+  );
+}
+

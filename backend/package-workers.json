@@ -1,0 +1,19 @@
+{
+  "name": "gobunnyy-backend-workers",
+  "version": "1.0.0",
+  "description": "Cloudflare Workers backend for job hunting platform",
+  "main": "worker.js",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:create": "wrangler d1 create job-hunting-db",
+    "db:migrate": "wrangler d1 execute job-hunting-db --file=./database/d1-schema.sql",
+    "db:local": "wrangler d1 execute job-hunting-db --local --file=./database/d1-schema.sql"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
+
