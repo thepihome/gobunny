@@ -35,7 +35,10 @@ export async function handleCandidateProfiles(request, env, user) {
     try {
       const profile = await queryOne(
         env,
-        'SELECT * FROM candidate_profiles WHERE user_id = ?',
+        `SELECT cp.*, jr.name as job_classification_name 
+         FROM candidate_profiles cp
+         LEFT JOIN job_roles jr ON cp.job_classification = jr.id
+         WHERE cp.user_id = ?`,
         [userId]
       );
 
@@ -140,8 +143,8 @@ export async function handleCandidateProfiles(request, env, user) {
         
         const fields = [
           'date_of_birth', 'address', 'city', 'state', 'country', 'zip_code',
-          'linkedin_url', 'portfolio_url', 'github_url', 'current_job_title',
-          'secondary_job_title', 'current_company', 'years_of_experience', 'availability',
+          'linkedin_url', 'portfolio_url', 'github_url', 'job_classification',
+          'current_job_title', 'current_company', 'years_of_experience', 'availability',
           'expected_salary_min', 'expected_salary_max', 'work_authorization',
           'willing_to_relocate', 'preferred_locations', 'summary', 'additional_notes'
         ];
@@ -190,7 +193,10 @@ export async function handleCandidateProfiles(request, env, user) {
         // Get updated profile
         result = await queryOne(
           env,
-          'SELECT * FROM candidate_profiles WHERE user_id = ?',
+          `SELECT cp.*, jr.name as job_classification_name 
+           FROM candidate_profiles cp
+           LEFT JOIN job_roles jr ON cp.job_classification = jr.id
+           WHERE cp.user_id = ?`,
           [user_id]
         );
 
@@ -235,8 +241,8 @@ export async function handleCandidateProfiles(request, env, user) {
 
         const fields = [
           'date_of_birth', 'address', 'city', 'state', 'country', 'zip_code',
-          'linkedin_url', 'portfolio_url', 'github_url', 'current_job_title',
-          'secondary_job_title', 'current_company', 'years_of_experience', 'availability',
+          'linkedin_url', 'portfolio_url', 'github_url', 'job_classification',
+          'current_job_title', 'current_company', 'years_of_experience', 'availability',
           'expected_salary_min', 'expected_salary_max', 'work_authorization',
           'willing_to_relocate', 'preferred_locations', 'summary', 'additional_notes'
         ];
@@ -270,7 +276,10 @@ export async function handleCandidateProfiles(request, env, user) {
         
         result = await queryOne(
           env,
-          'SELECT * FROM candidate_profiles WHERE id = ?',
+          `SELECT cp.*, jr.name as job_classification_name 
+           FROM candidate_profiles cp
+           LEFT JOIN job_roles jr ON cp.job_classification = jr.id
+           WHERE cp.id = ?`,
           [profileId]
         );
 

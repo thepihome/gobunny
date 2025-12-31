@@ -16,7 +16,6 @@ const fieldMapping = {
   'state': { table: 'cp', column: 'state', type: 'text' },
   'country': { table: 'cp', column: 'country', type: 'text' },
   'current_job_title': { table: 'cp', column: 'current_job_title', type: 'text' },
-  'secondary_job_title': { table: 'cp', column: 'secondary_job_title', type: 'text' },
   'current_company': { table: 'cp', column: 'current_company', type: 'text' },
   'years_of_experience': { table: 'cp', column: 'years_of_experience', type: 'number' },
   'availability': { table: 'cp', column: 'availability', type: 'text' },
@@ -550,7 +549,10 @@ export async function handleCandidates(request, env, user) {
       // Get candidate profile
       const profile = await queryOne(
         env,
-        'SELECT * FROM candidate_profiles WHERE user_id = ?',
+        `SELECT cp.*, jr.name as job_classification_name 
+         FROM candidate_profiles cp
+         LEFT JOIN job_roles jr ON cp.job_classification = jr.id
+         WHERE cp.user_id = ?`,
         [candidateId]
       );
 

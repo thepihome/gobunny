@@ -36,8 +36,7 @@ const Candidates = () => {
     { value: 'city', label: 'City', type: 'text' },
     { value: 'state', label: 'State', type: 'text' },
     { value: 'country', label: 'Country', type: 'text' },
-    { value: 'current_job_title', label: 'Job Classification', type: 'text' },
-    { value: 'secondary_job_title', label: 'Secondary Job Title', type: 'text' },
+    { value: 'current_job_title', label: 'Job Title', type: 'text' },
     { value: 'current_company', label: 'Company', type: 'text' },
     { value: 'years_of_experience', label: 'Years of Experience', type: 'number' },
     { value: 'availability', label: 'Availability', type: 'select', options: ['available', 'not-available', 'available-soon', 'contract-only'] },
@@ -62,8 +61,7 @@ const Candidates = () => {
     linkedin_url: '',
     portfolio_url: '',
     github_url: '',
-    current_job_title: '',
-    secondary_job_title: '',
+      current_job_title: '',
     current_company: '',
     years_of_experience: '',
     availability: 'available',
@@ -453,7 +451,6 @@ const Candidates = () => {
         job_classification: candidateData.job_classification || null,
         job_classification: candidateData.job_classification ? parseInt(candidateData.job_classification) : null,
         current_job_title: candidateData.current_job_title || null,
-        secondary_job_title: candidateData.secondary_job_title || null,
         current_company: candidateData.current_company || null,
         years_of_experience: candidateData.years_of_experience ? parseInt(candidateData.years_of_experience) : null,
         availability: candidateData.availability || null,
@@ -550,7 +547,6 @@ const Candidates = () => {
         job_classification: candidateData.job_classification || null,
         job_classification: candidateData.job_classification ? parseInt(candidateData.job_classification) : null,
         current_job_title: candidateData.current_job_title || null,
-        secondary_job_title: candidateData.secondary_job_title || null,
         current_company: candidateData.current_company || null,
         years_of_experience: candidateData.years_of_experience ? parseInt(candidateData.years_of_experience) : null,
         availability: candidateData.availability || null,
@@ -1014,9 +1010,13 @@ const Candidates = () => {
                     )}
                   </td>
                   <td>
-                    {candidate.job_classification_name || candidate.current_job_title ? (
+                    {candidate.current_job_title || candidate.job_classification_name ? (
                       <div className="candidate-position">
-                        <div><strong>{candidate.job_classification_name || candidate.current_job_title}</strong></div>
+                        <div>
+                          {candidate.current_job_title && <strong>{candidate.current_job_title}</strong>}
+                          {candidate.current_job_title && candidate.job_classification_name && <span> • </span>}
+                          {candidate.job_classification_name && <span className="text-muted">({candidate.job_classification_name})</span>}
+                        </div>
                         {candidate.current_company && (
                           <div className="candidate-company">{candidate.current_company}</div>
                         )}
@@ -1221,11 +1221,11 @@ const Candidates = () => {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>Secondary Job Title</label>
+                    <label>Job Title</label>
                     <input
                       type="text"
-                      value={candidateFormData.secondary_job_title}
-                      onChange={(e) => setCandidateFormData({ ...candidateFormData, secondary_job_title: e.target.value })}
+                      value={candidateFormData.current_job_title || ''}
+                      onChange={(e) => setCandidateFormData({ ...candidateFormData, current_job_title: e.target.value })}
                       placeholder="e.g., Senior Software Engineer"
                     />
                   </div>
@@ -1632,11 +1632,11 @@ const Candidates = () => {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>Secondary Job Title</label>
+                    <label>Job Title</label>
                     <input
                       type="text"
-                      value={candidateFormData.secondary_job_title}
-                      onChange={(e) => setCandidateFormData({ ...candidateFormData, secondary_job_title: e.target.value })}
+                      value={candidateFormData.current_job_title || ''}
+                      onChange={(e) => setCandidateFormData({ ...candidateFormData, current_job_title: e.target.value })}
                       placeholder="e.g., Senior Software Engineer"
                     />
                   </div>

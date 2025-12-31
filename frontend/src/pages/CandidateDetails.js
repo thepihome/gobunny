@@ -259,7 +259,7 @@ const CandidateDetails = () => {
                   <option value="">Select a job classification</option>
                   {jobRoles
                     .filter(role => role.is_active === 1 || role.is_active === true)
-                        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+                    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
                     .map((role) => (
                       <option key={role.id} value={role.id}>
                         {role.name}
@@ -268,11 +268,11 @@ const CandidateDetails = () => {
                 </select>
               </div>
               <div className="form-group">
-                <label>Secondary Job Title</label>
+                <label>Job Title</label>
                 <input
                   type="text"
-                  name="secondary_job_title"
-                  value={profileData.secondary_job_title || ''}
+                  name="current_job_title"
+                  value={profileData.current_job_title || ''}
                   onChange={handleInputChange}
                   placeholder="e.g., Senior Software Engineer"
                 />
@@ -430,9 +430,9 @@ const CandidateDetails = () => {
                 <strong>Address:</strong> {[profile.address, profile.city, profile.state, profile.country, profile.zip_code].filter(Boolean).join(', ')}
               </div>
             )}
-            {profile.current_job_title && (
+            {(profile.current_job_title || profile.job_classification_name) && (
               <div className="profile-item">
-                <strong>Current Position:</strong> {profile.current_job_title} {profile.current_company && `at ${profile.current_company}`}
+                <strong>Current Position:</strong> {profile.current_job_title || profile.job_classification_name} {profile.current_company && `at ${profile.current_company}`}
               </div>
             )}
             {profile.availability && (
