@@ -252,8 +252,8 @@ const CandidateDetails = () => {
               <div className="form-group">
                 <label>Job Classification</label>
                 <select
-                  name="current_job_title"
-                  value={profileData.current_job_title || ''}
+                  name="job_classification"
+                  value={profileData.job_classification || ''}
                   onChange={handleInputChange}
                 >
                   <option value="">Select a job classification</option>
@@ -261,7 +261,7 @@ const CandidateDetails = () => {
                     .filter(role => role.is_active === 1 || role.is_active === true)
                         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
                     .map((role) => (
-                      <option key={role.id} value={role.name}>
+                      <option key={role.id} value={role.id}>
                         {role.name}
                       </option>
                     ))}

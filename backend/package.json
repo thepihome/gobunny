@@ -9,6 +9,7 @@
     "setup-db": "node setup-db.js",
     "create-admin": "node create-admin.js",
     "migrate:job-classification": "node migrate-add-job-classification.js",
+    "migrate:candidate-classification": "node migrate-candidate-job-classification.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
   },

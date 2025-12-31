@@ -450,6 +450,8 @@ const Candidates = () => {
         linkedin_url: candidateData.linkedin_url || null,
         portfolio_url: candidateData.portfolio_url || null,
         github_url: candidateData.github_url || null,
+        job_classification: candidateData.job_classification || null,
+        job_classification: candidateData.job_classification ? parseInt(candidateData.job_classification) : null,
         current_job_title: candidateData.current_job_title || null,
         secondary_job_title: candidateData.secondary_job_title || null,
         current_company: candidateData.current_company || null,
@@ -545,6 +547,8 @@ const Candidates = () => {
         linkedin_url: candidateData.linkedin_url || null,
         portfolio_url: candidateData.portfolio_url || null,
         github_url: candidateData.github_url || null,
+        job_classification: candidateData.job_classification || null,
+        job_classification: candidateData.job_classification ? parseInt(candidateData.job_classification) : null,
         current_job_title: candidateData.current_job_title || null,
         secondary_job_title: candidateData.secondary_job_title || null,
         current_company: candidateData.current_company || null,
@@ -615,6 +619,7 @@ const Candidates = () => {
       linkedin_url: '',
       portfolio_url: '',
       github_url: '',
+      job_classification: '',
       current_job_title: '',
       current_company: '',
       years_of_experience: '',
@@ -1009,9 +1014,9 @@ const Candidates = () => {
                     )}
                   </td>
                   <td>
-                    {candidate.current_job_title ? (
+                    {candidate.job_classification_name || candidate.current_job_title ? (
                       <div className="candidate-position">
-                        <div><strong>{candidate.current_job_title}</strong></div>
+                        <div><strong>{candidate.job_classification_name || candidate.current_job_title}</strong></div>
                         {candidate.current_company && (
                           <div className="candidate-company">{candidate.current_company}</div>
                         )}
@@ -1201,15 +1206,15 @@ const Candidates = () => {
                   <div className="form-group">
                     <label>Job Classification</label>
                     <select
-                      value={candidateFormData.current_job_title}
-                      onChange={(e) => setCandidateFormData({ ...candidateFormData, current_job_title: e.target.value })}
+                      value={candidateFormData.job_classification || ''}
+                      onChange={(e) => setCandidateFormData({ ...candidateFormData, job_classification: e.target.value })}
                     >
-                      <option value="">Select a job role</option>
+                      <option value="">Select a job classification</option>
                       {jobRoles
                         .filter(role => role.is_active === 1 || role.is_active === true)
                         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
                         .map((role) => (
-                          <option key={role.id} value={role.name}>
+                          <option key={role.id} value={role.id}>
                             {role.name}
                           </option>
                         ))}
@@ -1612,15 +1617,15 @@ const Candidates = () => {
                   <div className="form-group">
                     <label>Job Classification</label>
                     <select
-                      value={candidateFormData.current_job_title}
-                      onChange={(e) => setCandidateFormData({ ...candidateFormData, current_job_title: e.target.value })}
+                      value={candidateFormData.job_classification || ''}
+                      onChange={(e) => setCandidateFormData({ ...candidateFormData, job_classification: e.target.value })}
                     >
-                      <option value="">Select a job role</option>
+                      <option value="">Select a job classification</option>
                       {jobRoles
                         .filter(role => role.is_active === 1 || role.is_active === true)
                         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
                         .map((role) => (
-                          <option key={role.id} value={role.name}>
+                          <option key={role.id} value={role.id}>
                             {role.name}
                           </option>
                         ))}

@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS candidate_profiles (
   linkedin_url VARCHAR(500),
   portfolio_url VARCHAR(500),
   github_url VARCHAR(500),
-  current_job_title VARCHAR(255),
+  current_job_title VARCHAR(255), -- Kept for backward compatibility, use job_classification instead
+  job_classification INTEGER REFERENCES job_roles(id),
   secondary_job_title VARCHAR(255),
   current_company VARCHAR(255),
   years_of_experience INTEGER,

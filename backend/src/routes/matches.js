@@ -10,77 +10,133 @@ import { authorize } from '../middleware/auth.js';
 // Auto-match candidates to jobs based on job classification
 export async function autoMatchByClassification(env, jobId) {
   try {
-    // Get job with classification
+    // Get job with classification - join with job_roles to get the name
     const job = await queryOne(env,
-      `SELECT j.*, jr.name as job_classification_name 
+      `SELECT j.*, jr.name as job_classification_name, jr.id as job_classification_id
        FROM jobs j 
        LEFT JOIN job_roles jr ON j.job_classification = jr.id 
        WHERE j.id = ?`,
       [jobId]
     );
 
-    if (!job || !job.job_classification) {
-      return { matched: 0, message: 'Job not found or has no classification' };
+    if (!job) {
+      return { matched: 0, message: 'Job not found' };
     }
 
-    // Get job role name
-    const jobRoleName = job.job_classification_name;
+    if (!job.job_classification || !job.job_classification_name) {
+      return { matched: 0, message: 'Job has no classification' };
+    }
+
+    // Get job role name (this is what candidates store in current_job_title)
+    const jobRoleName = job.job_classification_name ? job.job_classification_name.trim() : null;
+
+    if (!jobRoleName) {
+      return { matched: 0, message: 'Job has no classification name' };
+    }
+
+    console.log(`Auto-matching: Job ID ${jobId}, Classification ID: ${job.job_classification}, Name: "${jobRoleName}"`);
 
     // Find candidates with matching job classification
-    const candidates = await query(env,
-      `SELECT DISTINCT u.id as candidate_id, cp.current_job_title
+    // Now using job_classification ID (same as jobs table) for direct ID comparison
+    let candidates = await query(env,
+      `SELECT DISTINCT u.id as candidate_id, cp.job_classification, cp.years_of_experience, jr.name as job_classification_name
        FROM users u
        INNER JOIN candidate_profiles cp ON u.id = cp.user_id
+       LEFT JOIN job_roles jr ON cp.job_classification = jr.id
        WHERE u.role = 'candidate' 
        AND u.is_active = 1
-       AND cp.current_job_title = ?`,
-      [jobRoleName]
+       AND cp.job_classification = ?`,
+      [job.job_classification]
     );
+
+    // Fallback: If no matches with ID, try old method using current_job_title (for backward compatibility)
+    if (candidates.length === 0) {
+      console.log('Trying fallback method: using current_job_title (legacy)');
+      candidates = await query(env,
+        `SELECT DISTINCT u.id as candidate_id, cp.current_job_title, cp.years_of_experience, cp.current_job_title as job_classification_name
+         FROM users u
+         INNER JOIN candidate_profiles cp ON u.id = cp.user_id
+         WHERE u.role = 'candidate' 
+         AND u.is_active = 1
+         AND cp.current_job_title IS NOT NULL
+         AND cp.current_job_title != ''
+         AND TRIM(LOWER(cp.current_job_title)) = TRIM(LOWER(?))`,
+        [jobRoleName]
+      );
+    }
+
+    console.log(`Found ${candidates.length} candidates with matching classification "${jobRoleName}"`);
+    
+    // Debug: Log what candidates have for troubleshooting
+    if (candidates.length === 0) {
+      const allCandidates = await query(env,
+        `SELECT DISTINCT cp.current_job_title, COUNT(*) as count
+         FROM candidate_profiles cp
+         INNER JOIN users u ON cp.user_id = u.id
+         WHERE u.role = 'candidate' AND u.is_active = 1 AND cp.current_job_title IS NOT NULL AND cp.current_job_title != ''
+         GROUP BY cp.current_job_title`
+      );
+      console.log(`Job classification looking for: "${jobRoleName}" (ID: ${job.job_classification})`);
+      console.log('Available candidate classifications:', allCandidates.map(c => `"${c.current_job_title}" (${c.count})`).join(', '));
+    }
 
     let matched = 0;
     const matches = [];
 
     for (const candidate of candidates) {
-      // Get candidate's primary resume
+      // Get candidate's primary resume (optional - not required for matching)
       const resume = await queryOne(env,
         'SELECT * FROM resumes WHERE user_id = ? ORDER BY uploaded_at DESC LIMIT 1',
         [candidate.candidate_id]
       );
 
-      if (!resume) continue;
-
       // Calculate basic match score (classification match = 50 points base)
       let matchScore = 50;
 
-      // Add points for skills match if available
-      if (resume.skills && job.required_skills) {
+      // Add points for skills match if available (from resume or profile)
+      let resumeSkills = [];
+      if (resume && resume.skills) {
         try {
-          const resumeSkills = typeof resume.skills === 'string' 
+          resumeSkills = typeof resume.skills === 'string' 
             ? JSON.parse(resume.skills) 
             : resume.skills;
+        } catch (e) {
+          console.error('Error parsing resume skills:', e);
+        }
+      }
+
+      if (job.required_skills) {
+        try {
           const jobSkills = typeof job.required_skills === 'string'
             ? JSON.parse(job.required_skills)
             : job.required_skills;
 
-          if (Array.isArray(resumeSkills) && Array.isArray(jobSkills)) {
+          if (Array.isArray(resumeSkills) && Array.isArray(jobSkills) && jobSkills.length > 0) {
             const matchingSkills = resumeSkills.filter(skill =>
               jobSkills.some(js => js.toLowerCase() === skill.toLowerCase())
             );
             matchScore += Math.min(30, (matchingSkills.length / Math.max(jobSkills.length, 1)) * 30);
           }
         } catch (e) {
-          console.error('Error parsing skills:', e);
+          console.error('Error parsing job skills:', e);
         }
       }
 
-      // Add points for experience match
-      if (resume.experience_years && job.experience_level) {
+      // Add points for experience match (from resume or profile)
+      let experienceYears = null;
+      if (resume && resume.experience_years) {
+        experienceYears = resume.experience_years;
+      } else if (candidate.years_of_experience) {
+        experienceYears = candidate.years_of_experience;
+      }
+
+      if (experienceYears !== null && job.experience_level) {
         const expMap = { 'entry': 0, 'junior': 1, 'mid': 3, 'senior': 5, 'executive': 10 };
         const requiredExp = expMap[job.experience_level.toLowerCase()] || 0;
-        if (resume.experience_years >= requiredExp) {
+        if (experienceYears >= requiredExp) {
           matchScore += 20;
-        } else {
-          matchScore += (resume.experience_years / Math.max(requiredExp, 1)) * 20;
+        } else if (requiredExp > 0) {
+          matchScore += Math.min(20, (experienceYears / requiredExp) * 20);
         }
       }
 
@@ -100,21 +156,23 @@ export async function autoMatchByClassification(env, jobId) {
            WHERE id = ?`,
           [matchScore, existingMatch.id]
         );
+        console.log(`Updated match for candidate ${candidate.candidate_id} to job ${jobId} with score ${matchScore}`);
       } else {
-        // Create new match
+        // Create new match (resume_id is optional)
         await execute(env,
           `INSERT INTO job_matches (job_id, resume_id, candidate_id, match_score, skills_match, experience_match, education_match)
            VALUES (?, ?, ?, ?, ?, ?, ?)`,
           [
             jobId,
-            resume.id,
+            resume ? resume.id : null,
             candidate.candidate_id,
             matchScore,
             0, // skills_match - calculated separately if needed
-            resume.experience_years || 0,
+            experienceYears || 0,
             1  // education_match placeholder
           ]
         );
+        console.log(`Created match for candidate ${candidate.candidate_id} to job ${jobId} with score ${matchScore}`);
       }
 
       matched++;

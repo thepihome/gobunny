@@ -156,6 +156,9 @@ export async function handleCandidateProfiles(request, env, user) {
               value = JSON.stringify(value);
             } else if (field === 'willing_to_relocate') {
               value = value ? 1 : 0;
+            } else if (field === 'job_classification') {
+              // Convert to integer or null
+              value = value ? parseInt(value) : null;
             } else if (value === '' || value === null || value === undefined) {
               value = null;
             }
@@ -202,16 +205,18 @@ export async function handleCandidateProfiles(request, env, user) {
         });
 
         // Auto-match to jobs if job classification was updated
-        if (profileData.current_job_title && profileData.current_job_title !== oldData?.current_job_title) {
+        const newJobClassification = profileData.job_classification || result.job_classification;
+        const oldJobClassification = oldData?.job_classification;
+        
+        if (newJobClassification && newJobClassification !== oldJobClassification) {
           try {
             const { autoMatchByClassification } = await import('./matches.js');
-            // Get all active jobs with matching classification
+            // Get all active jobs with matching classification ID
             const jobs = await query(env,
-              `SELECT j.id, jr.name as job_classification_name
+              `SELECT j.id
                FROM jobs j
-               LEFT JOIN job_roles jr ON j.job_classification = jr.id
-               WHERE j.status = 'active' AND jr.name = ?`,
-              [profileData.current_job_title]
+               WHERE j.status = 'active' AND j.job_classification = ?`,
+              [newJobClassification]
             );
             // Match candidate to each job
             for (const job of jobs) {
@@ -244,6 +249,11 @@ export async function handleCandidateProfiles(request, env, user) {
             value = JSON.stringify(value);
           } else if (field === 'willing_to_relocate') {
             value = value ? 1 : 0;
+          } else if (field === 'job_classification') {
+            // Convert to integer or null
+            value = value ? parseInt(value) : null;
+          } else if (value === '' || value === null || value === undefined) {
+            value = null;
           }
           
           insertValues.push(value);

@@ -240,13 +240,16 @@ export async function handleCandidates(request, env, user) {
           ca.status as assignment_status,
           (SELECT COUNT(*) FROM resumes r WHERE r.user_id = u.id) as resume_count,
           (SELECT COUNT(*) FROM job_matches jm WHERE jm.candidate_id = u.id) as match_count,
+          cp.job_classification,
           cp.current_job_title, 
+          jr.name as job_classification_name,
           cp.current_company, 
           cp.years_of_experience, 
           cp.availability
         FROM consultant_assignments ca
         JOIN users u ON ca.candidate_id = u.id
         LEFT JOIN candidate_profiles cp ON u.id = cp.user_id
+        LEFT JOIN job_roles jr ON cp.job_classification = jr.id
         WHERE ${whereClause}
         ORDER BY ca.assigned_at DESC`,
         params
@@ -428,12 +431,15 @@ export async function handleCandidates(request, env, user) {
           u.created_at,
           (SELECT COUNT(*) FROM resumes r WHERE r.user_id = u.id) as resume_count,
           (SELECT COUNT(*) FROM job_matches jm WHERE jm.candidate_id = u.id) as match_count,
+          cp.job_classification,
           cp.current_job_title, 
+          jr.name as job_classification_name,
           cp.current_company, 
           cp.years_of_experience, 
           cp.availability
         FROM users u
         LEFT JOIN candidate_profiles cp ON u.id = cp.user_id
+        LEFT JOIN job_roles jr ON cp.job_classification = jr.id
         WHERE ${whereClause}
         ORDER BY u.created_at DESC`,
         params
