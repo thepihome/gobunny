@@ -1031,7 +1031,17 @@ const Candidates = () => {
                     <span className="candidate-stat">{candidate.resume_count || 0}</span>
                   </td>
                   <td>
-                    <span className="candidate-stat">{candidate.match_count || 0}</span>
+                    <span 
+                      className="candidate-stat"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/matches?candidate=${candidate.id}`);
+                      }}
+                      style={{ cursor: 'pointer' }}
+                      title="View matched jobs"
+                    >
+                      {candidate.match_count || 0}
+                    </span>
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

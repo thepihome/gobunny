@@ -192,7 +192,8 @@ export async function handleMatches(request, env, user) {
       }
 
       const matches = await query(env,
-        `SELECT jm.*, j.title, j.company, j.location, j.employment_type, j.status as job_status
+        `SELECT jm.*, j.title, j.company, j.location, j.employment_type, j.status as job_status,
+                j.title as job_title
          FROM job_matches jm
          INNER JOIN jobs j ON jm.job_id = j.id
          WHERE jm.candidate_id = ?

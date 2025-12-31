@@ -200,6 +200,28 @@ export async function handleCandidateProfiles(request, env, user) {
           newData: result,
           request
         });
+
+        // Auto-match to jobs if job classification was updated
+        if (profileData.current_job_title && profileData.current_job_title !== oldData?.current_job_title) {
+          try {
+            const { autoMatchByClassification } = await import('./matches.js');
+            // Get all active jobs with matching classification
+            const jobs = await query(env,
+              `SELECT j.id, jr.name as job_classification_name
+               FROM jobs j
+               LEFT JOIN job_roles jr ON j.job_classification = jr.id
+               WHERE j.status = 'active' AND jr.name = ?`,
+              [profileData.current_job_title]
+            );
+            // Match candidate to each job
+            for (const job of jobs) {
+              await autoMatchByClassification(env, job.id);
+            }
+          } catch (e) {
+            console.error('Error auto-matching after profile update:', e);
+            // Don't fail the update if matching fails
+          }
+        }
       } else {
         // Create new profile
         const insertFields = ['user_id'];
