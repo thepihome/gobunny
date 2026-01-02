@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { FiPlus, FiCheck, FiX } from 'react-icons/fi';
+import { useResizableColumns } from '../hooks/useResizableColumns';
 import './Timesheets.css';
 
 const Timesheets = () => {
@@ -74,6 +75,15 @@ const Timesheets = () => {
     createMutation.mutate(formData);
   };
 
+  // Resizable columns hook (8 columns for admin, 7 for consultant: Date, Hours, Description, User (admin only), Candidate, Job, Status, Actions)
+  const initialWidths = user?.role === 'admin' 
+    ? [120, 80, 300, 150, 150, 150, 100, 120] 
+    : [120, 80, 300, 150, 150, 100, 120];
+  const { getColumnProps, ResizeHandle, tableRef } = useResizableColumns(
+    initialWidths,
+    `timesheets-column-widths-${user?.role || 'default'}`
+  );
+
   if (isLoading) {
     return <div className="loading">Loading timesheets...</div>;
   }
@@ -89,17 +99,17 @@ const Timesheets = () => {
         )}
       </div>
 
-      <table className="table">
+      <table ref={tableRef} className="table" style={{ tableLayout: 'fixed', width: '100%' }}>
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Hours</th>
-            <th>Description</th>
-            {user?.role === 'admin' && <th>User</th>}
-            <th>Candidate</th>
-            <th>Job</th>
-            <th>Status</th>
-            <th>Actions</th>
+            <th {...getColumnProps(0)}>Date<ResizeHandle index={0} /></th>
+            <th {...getColumnProps(1)}>Hours<ResizeHandle index={1} /></th>
+            <th {...getColumnProps(2)}>Description<ResizeHandle index={2} /></th>
+            {user?.role === 'admin' && <th {...getColumnProps(3)}>User<ResizeHandle index={3} /></th>}
+            <th {...getColumnProps(user?.role === 'admin' ? 4 : 3)}>Candidate<ResizeHandle index={user?.role === 'admin' ? 4 : 3} /></th>
+            <th {...getColumnProps(user?.role === 'admin' ? 5 : 4)}>Job<ResizeHandle index={user?.role === 'admin' ? 5 : 4} /></th>
+            <th {...getColumnProps(user?.role === 'admin' ? 6 : 5)}>Status<ResizeHandle index={user?.role === 'admin' ? 6 : 5} /></th>
+            <th {...getColumnProps(user?.role === 'admin' ? 7 : 6)}>Actions<ResizeHandle index={user?.role === 'admin' ? 7 : 6} /></th>
           </tr>
         </thead>
         <tbody>

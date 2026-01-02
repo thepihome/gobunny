@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { FiFilter, FiChevronDown, FiChevronUp, FiUser, FiX, FiRefreshCw } from 'react-icons/fi';
+import { useResizableColumns } from '../hooks/useResizableColumns';
 import './Matches.css';
 
 const Matches = () => {
@@ -84,6 +85,13 @@ const Matches = () => {
       autoMatchMutation.mutate(jobId);
     }
   };
+
+  // Resizable columns hook (5 columns: Candidate, Classification, Match Score, Status, Actions)
+  // Note: Multiple tables use the same hook - they're conditionally rendered so only one is active at a time
+  const { getColumnProps, ResizeHandle, tableRef } = useResizableColumns(
+    [250, 200, 120, 100, 120], // Initial widths in pixels
+    'matches-column-widths'
+  );
 
   // Process and filter matches
   const processedMatches = useMemo(() => {
@@ -381,14 +389,14 @@ const Matches = () => {
                         {expandedJobs.has(job.id) && (
                           <div className="job-match-candidates">
                             {matches.length > 0 ? (
-                              <table className="matches-table">
+                              <table ref={tableRef} className="matches-table" style={{ tableLayout: 'fixed', width: '100%' }}>
                                 <thead>
                                   <tr>
-                                    <th>Candidate</th>
-                                    <th>Classification</th>
-                                    <th>Match Score</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <th {...getColumnProps(0)}>Candidate<ResizeHandle index={0} /></th>
+                                    <th {...getColumnProps(1)}>Classification<ResizeHandle index={1} /></th>
+                                    <th {...getColumnProps(2)}>Match Score<ResizeHandle index={2} /></th>
+                                    <th {...getColumnProps(3)}>Status<ResizeHandle index={3} /></th>
+                                    <th {...getColumnProps(4)}>Actions<ResizeHandle index={4} /></th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -474,14 +482,14 @@ const Matches = () => {
                         {expandedJobs.has(job.id) && (
                           <div className="job-match-candidates">
                             {matches.length > 0 ? (
-                              <table className="matches-table">
+                              <table ref={tableRef} className="matches-table" style={{ tableLayout: 'fixed', width: '100%' }}>
                                 <thead>
                                   <tr>
-                                    <th>Candidate</th>
-                                    <th>Classification</th>
-                                    <th>Match Score</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <th {...getColumnProps(0)}>Candidate<ResizeHandle index={0} /></th>
+                                    <th {...getColumnProps(1)}>Classification<ResizeHandle index={1} /></th>
+                                    <th {...getColumnProps(2)}>Match Score<ResizeHandle index={2} /></th>
+                                    <th {...getColumnProps(3)}>Status<ResizeHandle index={3} /></th>
+                                    <th {...getColumnProps(4)}>Actions<ResizeHandle index={4} /></th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -567,14 +575,14 @@ const Matches = () => {
                     {expandedJobs.has(job.id) && (
                       <div className="job-match-candidates">
                         {matches.length > 0 ? (
-                          <table className="matches-table">
+                          <table ref={tableRef} className="matches-table" style={{ tableLayout: 'fixed', width: '100%' }}>
                             <thead>
                               <tr>
-                                <th>Candidate</th>
-                                <th>Classification</th>
-                                <th>Match Score</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+                                <th {...getColumnProps(0)}>Candidate<ResizeHandle index={0} /></th>
+                                <th {...getColumnProps(1)}>Classification<ResizeHandle index={1} /></th>
+                                <th {...getColumnProps(2)}>Match Score<ResizeHandle index={2} /></th>
+                                <th {...getColumnProps(3)}>Status<ResizeHandle index={3} /></th>
+                                <th {...getColumnProps(4)}>Actions<ResizeHandle index={4} /></th>
                               </tr>
                             </thead>
                             <tbody>

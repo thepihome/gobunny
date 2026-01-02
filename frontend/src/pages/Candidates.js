@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { FiPlus, FiUser, FiMail, FiPhone, FiTrash2, FiX, FiSave, FiArrowUp, FiArrowDown } from 'react-icons/fi';
+import { useResizableColumns } from '../hooks/useResizableColumns';
 import './Candidates.css';
 
 const Candidates = () => {
@@ -197,48 +198,21 @@ const Candidates = () => {
     }
   );
 
-  // Fetch consultants for assignment (admin only)
-  const { data: consultants = [] } = useQuery(
-    ['consultants'],
-    () => api.get('/users').then(res => res.data.filter(u => u.role === 'consultant' || u.role === 'admin')),
-    {
-      enabled: user?.role === 'admin'
-    }
-  );
-
-  // Assignment state
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [assigningCandidate, setAssigningCandidate] = useState(null);
-  const [selectedConsultant, setSelectedConsultant] = useState('');
-
-  // Assign candidate mutation
-  const assignMutation = useMutation(
-    ({ candidateId, consultantId }) => api.post(`/candidates/${candidateId}/assign`, { consultant_id: consultantId }),
+  // Update candidate status mutation (admin only)
+  const updateStatusMutation = useMutation(
+    ({ candidateId, is_active }) => api.put(`/candidates/${candidateId}/status`, { is_active }),
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['candidates', user?.role]);
-        setShowAssignModal(false);
-        setAssigningCandidate(null);
-        setSelectedConsultant('');
       },
     }
   );
 
-  const handleAssignClick = (candidate) => {
-    setAssigningCandidate(candidate);
-    setShowAssignModal(true);
-    setSelectedConsultant('');
-  };
-
-  const handleAssignSubmit = (e) => {
-    e.preventDefault();
-    if (assigningCandidate && selectedConsultant) {
-      assignMutation.mutate({
-        candidateId: assigningCandidate.id,
-        consultantId: parseInt(selectedConsultant)
-      });
-    }
-  };
+  // Resizable columns hook (8 columns: Name, Email, Phone, Current Position, Experience, Resumes, Matches, Status)
+  const { getColumnProps, ResizeHandle, tableRef } = useResizableColumns(
+    [180, 200, 150, 250, 120, 100, 100, 150], // Initial widths in pixels
+    'candidates-column-widths'
+  );
 
   // Debounce URL updates to prevent page refresh on every keystroke
   const isInitialMount = useRef(true);
@@ -937,92 +911,105 @@ const Candidates = () => {
       )}
 
       <div className="candidates-table-container">
-        <table className="table candidates-table">
+        <table ref={tableRef} className="table candidates-table" style={{ tableLayout: 'fixed', width: '100%' }}>
           <thead>
             <tr>
               <th 
+                {...getColumnProps(0)}
                 className="sortable" 
                 onClick={() => handleSort('name')}
-                style={{ cursor: 'pointer', userSelect: 'none' }}
+                style={{ ...getColumnProps(0).style, cursor: 'pointer' }}
               >
                 Name
                 {sortColumn === 'name' && (
                   sortDirection === 'asc' ? <FiArrowUp style={{ marginLeft: '5px', display: 'inline' }} /> : <FiArrowDown style={{ marginLeft: '5px', display: 'inline' }} />
                 )}
+                <ResizeHandle index={0} />
               </th>
               <th 
+                {...getColumnProps(1)}
                 className="sortable" 
                 onClick={() => handleSort('email')}
-                style={{ cursor: 'pointer', userSelect: 'none' }}
+                style={{ ...getColumnProps(1).style, cursor: 'pointer' }}
               >
                 Email
                 {sortColumn === 'email' && (
                   sortDirection === 'asc' ? <FiArrowUp style={{ marginLeft: '5px', display: 'inline' }} /> : <FiArrowDown style={{ marginLeft: '5px', display: 'inline' }} />
                 )}
+                <ResizeHandle index={1} />
               </th>
               <th 
+                {...getColumnProps(2)}
                 className="sortable" 
                 onClick={() => handleSort('phone')}
-                style={{ cursor: 'pointer', userSelect: 'none' }}
+                style={{ ...getColumnProps(2).style, cursor: 'pointer' }}
               >
                 Phone
                 {sortColumn === 'phone' && (
                   sortDirection === 'asc' ? <FiArrowUp style={{ marginLeft: '5px', display: 'inline' }} /> : <FiArrowDown style={{ marginLeft: '5px', display: 'inline' }} />
                 )}
+                <ResizeHandle index={2} />
               </th>
               <th 
+                {...getColumnProps(3)}
                 className="sortable" 
                 onClick={() => handleSort('current_position')}
-                style={{ cursor: 'pointer', userSelect: 'none' }}
+                style={{ ...getColumnProps(3).style, cursor: 'pointer' }}
               >
                 Current Position
                 {sortColumn === 'current_position' && (
                   sortDirection === 'asc' ? <FiArrowUp style={{ marginLeft: '5px', display: 'inline' }} /> : <FiArrowDown style={{ marginLeft: '5px', display: 'inline' }} />
                 )}
+                <ResizeHandle index={3} />
               </th>
               <th 
+                {...getColumnProps(4)}
                 className="sortable" 
                 onClick={() => handleSort('experience')}
-                style={{ cursor: 'pointer', userSelect: 'none' }}
+                style={{ ...getColumnProps(4).style, cursor: 'pointer' }}
               >
                 Experience
                 {sortColumn === 'experience' && (
                   sortDirection === 'asc' ? <FiArrowUp style={{ marginLeft: '5px', display: 'inline' }} /> : <FiArrowDown style={{ marginLeft: '5px', display: 'inline' }} />
                 )}
+                <ResizeHandle index={4} />
               </th>
               <th 
+                {...getColumnProps(5)}
                 className="sortable" 
                 onClick={() => handleSort('resumes')}
-                style={{ cursor: 'pointer', userSelect: 'none' }}
+                style={{ ...getColumnProps(5).style, cursor: 'pointer' }}
               >
                 Resumes
                 {sortColumn === 'resumes' && (
                   sortDirection === 'asc' ? <FiArrowUp style={{ marginLeft: '5px', display: 'inline' }} /> : <FiArrowDown style={{ marginLeft: '5px', display: 'inline' }} />
                 )}
+                <ResizeHandle index={5} />
               </th>
               <th 
+                {...getColumnProps(6)}
                 className="sortable" 
                 onClick={() => handleSort('matches')}
-                style={{ cursor: 'pointer', userSelect: 'none' }}
+                style={{ ...getColumnProps(6).style, cursor: 'pointer' }}
               >
                 Matches
                 {sortColumn === 'matches' && (
                   sortDirection === 'asc' ? <FiArrowUp style={{ marginLeft: '5px', display: 'inline' }} /> : <FiArrowDown style={{ marginLeft: '5px', display: 'inline' }} />
                 )}
+                <ResizeHandle index={6} />
               </th>
               <th 
+                {...getColumnProps(7)}
                 className="sortable" 
                 onClick={() => handleSort('status')}
-                style={{ cursor: 'pointer', userSelect: 'none' }}
+                style={{ ...getColumnProps(7).style, cursor: 'pointer' }}
               >
                 Status
                 {sortColumn === 'status' && (
                   sortDirection === 'asc' ? <FiArrowUp style={{ marginLeft: '5px', display: 'inline' }} /> : <FiArrowDown style={{ marginLeft: '5px', display: 'inline' }} />
                 )}
+                <ResizeHandle index={7} />
               </th>
-              {user?.role === 'admin' && (
-                <th>Actions</th>
-              )}
             </tr>
           </thead>
           <tbody>
@@ -1092,34 +1079,57 @@ const Candidates = () => {
                       {candidate.match_count || 0}
                     </span>
                   </td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span className={`badge badge-${candidate.is_active ? 'success' : 'danger'}`}>
-                        {candidate.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                      {candidate.assignment_status && (
-                        <span className={`badge badge-info`}>
-                          {candidate.assignment_status}
-                        </span>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      {user?.role === 'admin' ? (
+                        <>
+                          <select
+                            className="status-select"
+                            value={candidate.is_active ? 'active' : 'inactive'}
+                            onChange={(e) => {
+                              const newStatus = e.target.value === 'active';
+                              updateStatusMutation.mutate({
+                                candidateId: candidate.id,
+                                is_active: newStatus
+                              });
+                            }}
+                            disabled={updateStatusMutation.isLoading}
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              border: '1px solid #ddd',
+                              cursor: 'pointer',
+                              fontSize: '14px',
+                              backgroundColor: candidate.is_active ? '#d4edda' : '#f8d7da',
+                              color: candidate.is_active ? '#155724' : '#721c24'
+                            }}
+                          >
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                          </select>
+                          {candidate.assignment_status && (
+                            <span className={`badge badge-info`}>
+                              {candidate.assignment_status}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        // For consultants, only show assignment status
+                        candidate.assignment_status ? (
+                          <span className={`badge badge-info`}>
+                            {candidate.assignment_status}
+                          </span>
+                        ) : (
+                          <span className="text-muted">-</span>
+                        )
                       )}
                     </div>
                   </td>
-                  {user?.role === 'admin' && (
-                    <td onClick={(e) => e.stopPropagation()}>
-                      <button
-                        className="btn btn-primary btn-sm"
-                        onClick={() => handleAssignClick(candidate)}
-                        title="Assign to consultant"
-                      >
-                        Assign
-                      </button>
-                    </td>
-                  )}
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={user?.role === 'admin' ? 9 : 8} className="empty-state">
+                <td colSpan="8" className="empty-state">
                   {user?.role === 'admin' ? 'No candidates found' : 'No candidates assigned'}
                 </td>
               </tr>
@@ -1976,58 +1986,6 @@ const Candidates = () => {
         </div>
       )}
 
-      {/* Assign Candidate Modal */}
-      {showAssignModal && assigningCandidate && user?.role === 'admin' && (
-        <div className="modal-overlay" onClick={() => {
-          setShowAssignModal(false);
-          setAssigningCandidate(null);
-          setSelectedConsultant('');
-        }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Assign Candidate to Consultant</h2>
-            <p>
-              Assign <strong>{assigningCandidate.first_name} {assigningCandidate.last_name}</strong> to a consultant
-            </p>
-            <form onSubmit={handleAssignSubmit}>
-              <div className="form-group">
-                <label>Select Consultant</label>
-                <select
-                  value={selectedConsultant}
-                  onChange={(e) => setSelectedConsultant(e.target.value)}
-                  required
-                >
-                  <option value="">Choose a consultant...</option>
-                  {consultants.map((consultant) => (
-                    <option key={consultant.id} value={consultant.id}>
-                      {consultant.first_name} {consultant.last_name} ({consultant.email}) - {consultant.role}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="modal-actions">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    setShowAssignModal(false);
-                    setAssigningCandidate(null);
-                    setSelectedConsultant('');
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={assignMutation.isLoading || !selectedConsultant}
-                >
-                  {assignMutation.isLoading ? 'Assigning...' : 'Assign'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

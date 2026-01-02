@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { FiPlus, FiSearch, FiMapPin, FiDollarSign, FiX, FiBriefcase, FiLink, FiEdit, FiTrash2 } from 'react-icons/fi';
+import { useResizableColumns } from '../hooks/useResizableColumns';
 import './Jobs.css';
 
 const Jobs = () => {
@@ -214,16 +215,16 @@ const Jobs = () => {
       </div>
 
       <div className="jobs-table-container">
-        <table className="table jobs-table">
+        <table ref={tableRef} className="table jobs-table" style={{ tableLayout: 'fixed', width: '100%' }}>
           <thead>
             <tr>
-              <th>Company</th>
-              <th>Job Title</th>
-              <th>Location</th>
-              <th>Type</th>
-              <th>Salary</th>
-              <th>Status</th>
-              {(user?.role === 'consultant' || user?.role === 'admin') && <th>Actions</th>}
+              <th {...getColumnProps(0)}>Company<ResizeHandle index={0} /></th>
+              <th {...getColumnProps(1)}>Job Title<ResizeHandle index={1} /></th>
+              <th {...getColumnProps(2)}>Location<ResizeHandle index={2} /></th>
+              <th {...getColumnProps(3)}>Type<ResizeHandle index={3} /></th>
+              <th {...getColumnProps(4)}>Salary<ResizeHandle index={4} /></th>
+              <th {...getColumnProps(5)}>Status<ResizeHandle index={5} /></th>
+              {(user?.role === 'consultant' || user?.role === 'admin') && <th {...getColumnProps(6)}>Actions<ResizeHandle index={6} /></th>}
             </tr>
           </thead>
           <tbody>

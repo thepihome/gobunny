@@ -755,6 +755,105 @@ export async function handleCandidates(request, env, user) {
     }
   }
 
+  // Update candidate status (admin only)
+  const statusMatch = path.match(/^\/api\/candidates\/(\d+)\/status$/);
+  if (statusMatch && method === 'PUT') {
+    const candidateId = statusMatch[1];
+    const authCheck = authorize('admin')(user);
+    if (authCheck) {
+      return addCorsHeaders(
+        new Response(
+          JSON.stringify({ error: authCheck.error }),
+          { status: authCheck.status || 403, headers: { 'Content-Type': 'application/json' } }
+        ),
+        env,
+        request
+      );
+    }
+
+    try {
+      const body = await request.json();
+      const { is_active } = body;
+
+      if (typeof is_active !== 'boolean') {
+        return addCorsHeaders(
+          new Response(
+            JSON.stringify({ error: 'is_active must be a boolean' }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } }
+          ),
+          env,
+          request
+        );
+      }
+
+      // Check if candidate exists
+      const candidate = await queryOne(
+        env,
+        'SELECT id, role FROM users WHERE id = ?',
+        [candidateId]
+      );
+
+      if (!candidate) {
+        return addCorsHeaders(
+          new Response(
+            JSON.stringify({ error: 'Candidate not found' }),
+            { status: 404, headers: { 'Content-Type': 'application/json' } }
+          ),
+          env,
+          request
+        );
+      }
+
+      if (candidate.role !== 'candidate') {
+        return addCorsHeaders(
+          new Response(
+            JSON.stringify({ error: 'User is not a candidate' }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } }
+          ),
+          env,
+          request
+        );
+      }
+
+      // Update status
+      await execute(
+        env,
+        `UPDATE users SET is_active = ?, updated_at = datetime('now') WHERE id = ?`,
+        [is_active ? 1 : 0, candidateId]
+      );
+
+      // Fetch updated candidate
+      const updated = await queryOne(
+        env,
+        'SELECT id, is_active FROM users WHERE id = ?',
+        [candidateId]
+      );
+
+      return addCorsHeaders(
+        new Response(
+          JSON.stringify({ 
+            id: updated.id, 
+            is_active: updated.is_active === 1 || updated.is_active === true,
+            message: 'Candidate status updated successfully' 
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        ),
+        env,
+        request
+      );
+    } catch (error) {
+      console.error('Error updating candidate status:', error);
+      return addCorsHeaders(
+        new Response(
+          JSON.stringify({ error: 'Server error', details: error.message }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        ),
+        env,
+        request
+      );
+    }
+  }
+
   // Not found
   return addCorsHeaders(
     new Response(

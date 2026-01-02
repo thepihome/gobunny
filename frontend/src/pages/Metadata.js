@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { FiDatabase, FiBriefcase, FiPlus, FiEdit, FiTrash2, FiX, FiSave } from 'react-icons/fi';
+import { useResizableColumns } from '../hooks/useResizableColumns';
 import './Metadata.css';
 
 const Metadata = () => {
@@ -172,13 +173,13 @@ const Metadata = () => {
                 </div>
               ) : (
                 <div className="roles-table-container">
-                  <table className="roles-table">
+                  <table ref={tableRef} className="roles-table" style={{ tableLayout: 'fixed', width: '100%' }}>
                     <thead>
                       <tr>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                        <th {...getColumnProps(0)}>Name<ResizeHandle index={0} /></th>
+                        <th {...getColumnProps(1)}>Description<ResizeHandle index={1} /></th>
+                        <th {...getColumnProps(2)}>Status<ResizeHandle index={2} /></th>
+                        <th {...getColumnProps(3)}>Actions<ResizeHandle index={3} /></th>
                       </tr>
                     </thead>
                     <tbody>

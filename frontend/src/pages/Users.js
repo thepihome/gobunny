@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../config/api';
 import { FiPlus, FiTrash2, FiUser, FiMail, FiPhone, FiShield, FiCalendar, FiX, FiUsers, FiEdit2, FiSave } from 'react-icons/fi';
+import { useResizableColumns } from '../hooks/useResizableColumns';
 import './Users.css';
 
 const Users = () => {
@@ -184,15 +185,15 @@ const Users = () => {
       </div>
 
       <div className="users-table-container">
-        <table className="table users-table">
+        <table ref={tableRef} className="table users-table" style={{ tableLayout: 'fixed', width: '100%' }}>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Phone</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th {...getColumnProps(0)}>Name<ResizeHandle index={0} /></th>
+              <th {...getColumnProps(1)}>Email<ResizeHandle index={1} /></th>
+              <th {...getColumnProps(2)}>Role<ResizeHandle index={2} /></th>
+              <th {...getColumnProps(3)}>Phone<ResizeHandle index={3} /></th>
+              <th {...getColumnProps(4)}>Status<ResizeHandle index={4} /></th>
+              <th {...getColumnProps(5)}>Actions<ResizeHandle index={5} /></th>
             </tr>
           </thead>
           <tbody>
