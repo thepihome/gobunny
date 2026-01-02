@@ -111,6 +111,12 @@ const Jobs = () => {
     }
   );
 
+  // Initialize resizable columns hook
+  const { getColumnProps, ResizeHandle, tableRef } = useResizableColumns(
+    [150, 250, 180, 100, 120, 100, 120], // Initial widths in pixels
+    'jobs-column-widths'
+  );
+
   const handlePostJob = (e) => {
     e.preventDefault();
     const submitData = {

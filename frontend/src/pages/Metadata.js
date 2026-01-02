@@ -97,6 +97,12 @@ const Metadata = () => {
     }
   };
 
+  // Initialize resizable columns hook
+  const { getColumnProps, ResizeHandle, tableRef } = useResizableColumns(
+    [200, 300, 100, 150], // Initial widths in pixels
+    'metadata-roles-column-widths'
+  );
+
   const handleRoleSubmit = (e) => {
     e.preventDefault();
     if (editingRole) {
