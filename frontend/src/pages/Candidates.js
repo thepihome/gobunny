@@ -224,16 +224,6 @@ const Candidates = () => {
     }
   );
 
-  // Unassign candidate mutation
-  const unassignMutation = useMutation(
-    ({ candidateId, consultantId }) => api.delete(`/candidates/${candidateId}/assign/${consultantId}`),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['candidates', user?.role]);
-      },
-    }
-  );
-
   const handleAssignClick = (candidate) => {
     setAssigningCandidate(candidate);
     setShowAssignModal(true);
@@ -1979,6 +1969,59 @@ const Candidates = () => {
                   disabled={updateCandidateMutation.isLoading}
                 >
                   {updateCandidateMutation.isLoading ? 'Updating...' : 'Update Candidate'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Candidate Modal */}
+      {showAssignModal && assigningCandidate && user?.role === 'admin' && (
+        <div className="modal-overlay" onClick={() => {
+          setShowAssignModal(false);
+          setAssigningCandidate(null);
+          setSelectedConsultant('');
+        }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>Assign Candidate to Consultant</h2>
+            <p>
+              Assign <strong>{assigningCandidate.first_name} {assigningCandidate.last_name}</strong> to a consultant
+            </p>
+            <form onSubmit={handleAssignSubmit}>
+              <div className="form-group">
+                <label>Select Consultant</label>
+                <select
+                  value={selectedConsultant}
+                  onChange={(e) => setSelectedConsultant(e.target.value)}
+                  required
+                >
+                  <option value="">Choose a consultant...</option>
+                  {consultants.map((consultant) => (
+                    <option key={consultant.id} value={consultant.id}>
+                      {consultant.first_name} {consultant.last_name} ({consultant.email}) - {consultant.role}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowAssignModal(false);
+                    setAssigningCandidate(null);
+                    setSelectedConsultant('');
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={assignMutation.isLoading || !selectedConsultant}
+                >
+                  {assignMutation.isLoading ? 'Assigning...' : 'Assign'}
                 </button>
               </div>
             </form>
