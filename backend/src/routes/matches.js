@@ -299,10 +299,12 @@ export async function handleMatches(request, env, user) {
       const jobId = jobMatchesMatch[1];
 
       const matches = await query(env,
-        `SELECT jm.*, u.first_name, u.last_name, u.email, cp.current_job_title
+        `SELECT jm.*, u.first_name, u.last_name, u.email, cp.current_job_title, cp.job_classification,
+                jr.name as job_classification_name
          FROM job_matches jm
          INNER JOIN users u ON jm.candidate_id = u.id
          LEFT JOIN candidate_profiles cp ON u.id = cp.user_id
+         LEFT JOIN job_roles jr ON cp.job_classification = jr.id
          WHERE jm.job_id = ?
          ORDER BY jm.match_score DESC, jm.matched_at DESC`,
         [jobId]
