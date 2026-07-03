@@ -4,8 +4,9 @@ import { useAuth } from '../context/AuthContext';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  const hasToken = Boolean(localStorage.getItem('token'));
 
-  if (loading) {
+  if (loading || (hasToken && !user)) {
     return <div className="loading">Loading...</div>;
   }
 

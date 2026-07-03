@@ -1,0 +1,3 @@
+-- Email configuration is stored in app_settings under key `email_config`.
+-- No schema change required; run this only as documentation.
+-- Default config is applied on first GET if the key is missing.

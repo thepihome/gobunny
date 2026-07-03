@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { parseQueryConfig } from '../utils/kpiConfig';
 import DashboardCharts from '../components/DashboardCharts';
 import DashboardQuickActions from '../components/DashboardQuickActions';
+import LoadingButton, { iconSpinClass } from '../components/LoadingButton';
 import {
   FiPlus,
   FiEdit,
@@ -190,14 +191,14 @@ const Dashboard = () => {
           </p>
         </div>
         <div className="dashboard-header-actions">
-          <button
-            type="button"
+          <LoadingButton
             className="btn btn-secondary"
+            icon={FiRefreshCw}
+            loading={analyticsFetching}
             onClick={() => refetchAnalytics()}
-            disabled={analyticsFetching}
           >
-            <FiRefreshCw className={analyticsFetching ? 'spin' : ''} /> Refresh
-          </button>
+            Refresh
+          </LoadingButton>
           <button type="button" className="btn btn-primary" onClick={handleCreateKpi}>
             <FiPlus /> Add KPI
           </button>
@@ -316,8 +317,14 @@ const Dashboard = () => {
                         <button type="button" onClick={() => handleEditKpi(kpi)} className="btn-icon" aria-label="Edit KPI">
                           <FiEdit />
                         </button>
-                        <button type="button" onClick={() => handleDeleteKpi(kpi)} className="btn-icon" aria-label="Delete KPI">
-                          <FiTrash2 />
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteKpi(kpi)}
+                          className={`btn-icon${deleteKpiMutation.isLoading && deleteKpiMutation.variables === kpi.id ? ' is-loading' : ''}`}
+                          aria-label="Delete KPI"
+                          disabled={deleteKpiMutation.isLoading && deleteKpiMutation.variables === kpi.id}
+                        >
+                          <FiTrash2 className={iconSpinClass(deleteKpiMutation.isLoading && deleteKpiMutation.variables === kpi.id)} />
                         </button>
                       </div>
                     </div>
@@ -409,13 +416,15 @@ const Dashboard = () => {
                 <button type="button" className="btn btn-secondary" onClick={() => setShowKpiModal(false)}>
                   Cancel
                 </button>
-                <button
+                <LoadingButton
                   type="submit"
                   className="btn btn-primary"
-                  disabled={createKpiMutation.isLoading || updateKpiMutation.isLoading}
+                  icon={editingKpi ? FiEdit : FiPlus}
+                  loading={createKpiMutation.isLoading || updateKpiMutation.isLoading}
+                  loadingLabel={editingKpi ? 'Updating…' : 'Creating…'}
                 >
                   {editingKpi ? 'Update' : 'Create'}
-                </button>
+                </LoadingButton>
               </div>
             </form>
           </div>

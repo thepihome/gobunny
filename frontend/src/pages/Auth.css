@@ -6,8 +6,15 @@
   justify-content: center;
   background: var(--mesh-gradient);
   background-attachment: fixed;
-  padding: 1.5rem;
+  padding: var(--space-6);
   position: relative;
+}
+
+.auth-theme-toggle {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 2;
 }
 
 .auth-container::before {

@@ -6,6 +6,35 @@ import { query, queryOne, execute } from '../utils/db.js';
 import { addCorsHeaders } from '../utils/cors.js';
 import { authorize } from '../middleware/auth.js';
 
+function parseJsonArray(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function normalizeResume(resume) {
+  return {
+    ...resume,
+    skills: parseJsonArray(resume.skills),
+  };
+}
+
+function normalizeProfile(profile) {
+  if (!profile) return null;
+  return {
+    ...profile,
+    preferred_locations: parseJsonArray(profile.preferred_locations),
+  };
+}
+
 // Field mapping: frontend field name -> database column
 const fieldMapping = {
   'first_name': { table: 'u', column: 'first_name', type: 'text' },
@@ -569,7 +598,7 @@ export async function handleCandidates(request, env, user) {
       );
       if (assignment) {
         consultant = {
-          id: assignment.id,
+          id: assignment.consultant_id,
           first_name: assignment.first_name,
           last_name: assignment.last_name,
           email: assignment.email,
@@ -581,10 +610,10 @@ export async function handleCandidates(request, env, user) {
         new Response(
           JSON.stringify({
             ...candidate,
-            resumes: resumes || [],
+            resumes: (resumes || []).map(normalizeResume),
             matches: matches || [],
             crm_interactions: crmInteractions || [],
-            profile: profile || null,
+            profile: normalizeProfile(profile),
             consultant: consultant,
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }

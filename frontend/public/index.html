@@ -12,6 +12,15 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
       rel="stylesheet"
     />
+    <script>
+      (function () {
+        try {
+          var mode = localStorage.getItem('themeMode');
+          if (mode === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+          else if (mode === 'light') document.documentElement.setAttribute('data-theme', 'light');
+        } catch (e) {}
+      })();
+    </script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
   <body>

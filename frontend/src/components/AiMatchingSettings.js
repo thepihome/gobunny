@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../config/api';
 import { FiSave, FiZap, FiRefreshCw } from 'react-icons/fi';
+import LoadingButton from './LoadingButton';
 
 const AiMatchingSettings = () => {
   const queryClient = useQueryClient();
@@ -185,9 +186,9 @@ const AiMatchingSettings = () => {
         </div>
 
         <div className="form-actions">
-          <button type="submit" className="btn btn-primary" disabled={saveMutation.isLoading}>
-            <FiSave /> {saveMutation.isLoading ? 'Saving…' : 'Save AI settings'}
-          </button>
+          <LoadingButton type="submit" className="btn btn-primary" icon={FiSave} loading={saveMutation.isLoading} loadingLabel="Saving…">
+            Save AI settings
+          </LoadingButton>
         </div>
       </form>
 
@@ -198,14 +199,16 @@ const AiMatchingSettings = () => {
         <p style={{ color: '#666' }}>
           Runs AI scoring for every active candidate against each active job (for each job, sequentially). Do this after changing provider, keys, or posting many jobs.
         </p>
-        <button
+        <LoadingButton
           type="button"
           className="btn btn-secondary"
-          disabled={recomputeBusy}
+          icon={FiRefreshCw}
+          loading={recomputeBusy}
+          loadingLabel="Running…"
           onClick={runRecomputeAll}
         >
-          {recomputeBusy ? 'Running…' : 'Recompute AI matches for all active jobs'}
-        </button>
+          Recompute AI matches for all active jobs
+        </LoadingButton>
         {recomputeLog && (
           <pre
             style={{

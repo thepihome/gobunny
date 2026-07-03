@@ -17,6 +17,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build && node scripts/verify-build.js",
     "test": "react-scripts test",
+    "test:unit": "react-scripts test --watchAll=false",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

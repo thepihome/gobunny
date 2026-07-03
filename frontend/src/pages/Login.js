@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ThemeToggle from '../components/ThemeToggle';
 import './Auth.css';
 
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
@@ -8,18 +9,32 @@ const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
 const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { loginWithGoogle } = useAuth();
+  const { user, loading: authLoading, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate('/', { replace: true });
+    }
+  }, [authLoading, user, navigate]);
   const buttonRef = useRef(null);
   const callbackRef = useRef(null);
   callbackRef.current = async (response) => {
+    if (!response?.credential) {
+      setError('Google sign-in did not return a credential. Try again or check OAuth origins.');
+      return;
+    }
     setError('');
     setLoading(true);
     try {
       await loginWithGoogle(response.credential);
-      navigate('/');
     } catch (err) {
-      setError(err.response?.data?.error || 'Sign in failed');
+      const msg =
+        err.response?.data?.error ||
+        err.message ||
+        'Sign in failed';
+      setError(msg);
+      console.error('[GoBunny] Google login failed:', err.response?.status, msg);
     } finally {
       setLoading(false);
     }
@@ -75,6 +90,9 @@ const Login = () => {
 
   return (
     <div className="auth-container">
+      <div className="auth-theme-toggle">
+        <ThemeToggle />
+      </div>
       <div className="auth-brand">
         <span className="brand-mark" aria-hidden="true">GB</span>
         <div className="auth-brand-text">

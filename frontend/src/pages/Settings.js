@@ -5,11 +5,14 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { FiSettings, FiUser, FiDroplet, FiUsers, FiShield, FiSave, FiX, FiPlus, FiEdit, FiTrash2, FiMail, FiCalendar, FiEdit2, FiUserPlus, FiUserMinus, FiInfo, FiZap } from 'react-icons/fi';
 import AiMatchingSettings from '../components/AiMatchingSettings';
+import EmailSettings from '../components/EmailSettings';
+import LoadingButton from '../components/LoadingButton';
+import ThemeToggle from '../components/ThemeToggle';
 import './Settings.css';
 
 const Settings = () => {
   const { user, refreshUser } = useAuth();
-  const { currentTheme, themes, changeTheme } = useTheme();
+  const { accentTheme, accentThemes, themeMode, changeAccentTheme, isDark } = useTheme();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('profile');
   const [profileData, setProfileData] = useState({
@@ -101,6 +104,7 @@ const Settings = () => {
       { id: 'groups', label: 'Groups', icon: FiUsers, roles: ['admin'] },
       { id: 'permissions', label: 'Permissions', icon: FiShield, roles: ['admin'] },
       { id: 'ai-matching', label: 'AI matching', icon: FiZap, roles: ['admin'] },
+      { id: 'email', label: 'Email', icon: FiMail, roles: ['admin'] },
     ] : []),
   ];
 
@@ -198,13 +202,15 @@ const Settings = () => {
                   </div>
                 </div>
                 <div className="form-actions">
-                  <button
+                  <LoadingButton
                     type="submit"
                     className="btn btn-primary"
-                    disabled={updateProfileMutation.isLoading}
+                    icon={FiSave}
+                    loading={updateProfileMutation.isLoading}
+                    loadingLabel="Saving..."
                   >
-                    <FiSave /> {updateProfileMutation.isLoading ? 'Saving...' : 'Save Changes'}
-                  </button>
+                    Save Changes
+                  </LoadingButton>
                 </div>
               </form>
             </div>
@@ -216,13 +222,24 @@ const Settings = () => {
                 <FiDroplet /> Theme Settings
               </h2>
               <div className="theme-selector">
-                <p>Choose your preferred color theme:</p>
-                <div className="theme-grid">
-                  {Object.entries(themes).map(([key, theme]) => (
-                    <div
+                <h3 className="theme-section-label">Appearance</h3>
+                <p>Choose light, dark, or match your system preference.</p>
+                <ThemeToggle />
+                <h3 className="theme-section-label">Accent color</h3>
+                <p>
+                  {isDark
+                    ? 'Accent colors apply in light mode. Switch to light to preview brand palettes.'
+                    : 'Choose a brand accent for the light theme.'}
+                </p>
+                <div className={`theme-grid ${isDark ? 'theme-grid--disabled' : ''}`}>
+                  {Object.entries(accentThemes).map(([key, theme]) => (
+                    <button
                       key={key}
-                      className={`theme-card ${currentTheme === key ? 'active' : ''}`}
-                      onClick={() => changeTheme(key)}
+                      type="button"
+                      className={`theme-card ${accentTheme === key ? 'active' : ''}`}
+                      onClick={() => !isDark && changeAccentTheme(key)}
+                      disabled={isDark}
+                      aria-pressed={accentTheme === key}
                     >
                       <div
                         className="theme-preview"
@@ -231,18 +248,27 @@ const Settings = () => {
                         }}
                       >
                         <div className="theme-preview-content">
-                          <div style={{ backgroundColor: theme.surface, color: theme.text, padding: '10px', borderRadius: '4px' }}>
+                          <div
+                            className="theme-preview-chip"
+                            style={{ backgroundColor: theme.surface, color: theme.text }}
+                          >
                             Preview
                           </div>
                         </div>
                       </div>
                       <div className="theme-info">
                         <h3>{theme.name}</h3>
-                        {currentTheme === key && <span className="theme-active-badge">Active</span>}
+                        {accentTheme === key && !isDark && (
+                          <span className="theme-active-badge">Active</span>
+                        )}
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
+                <p className="theme-mode-note">
+                  Current mode: <strong>{themeMode === 'system' ? 'System' : themeMode}</strong>
+                  {themeMode === 'system' && ' (follows OS preference)'}
+                </p>
               </div>
             </div>
           )}
@@ -254,6 +280,7 @@ const Settings = () => {
           {activeTab === 'permissions' && user?.role === 'admin' && <PermissionsManagement />}
 
           {activeTab === 'ai-matching' && user?.role === 'admin' && <AiMatchingSettings />}
+          {activeTab === 'email' && user?.role === 'admin' && <EmailSettings />}
         </div>
       </div>
     </div>
@@ -826,13 +853,15 @@ const UsersManagement = () => {
                       >
                         Cancel
                       </button>
-                      <button 
-                        type="submit" 
+                      <LoadingButton
+                        type="submit"
                         className="btn btn-primary"
-                        disabled={updateMutation.isLoading}
+                        icon={FiSave}
+                        loading={updateMutation.isLoading}
+                        loadingLabel="Saving..."
                       >
-                        <FiSave /> {updateMutation.isLoading ? 'Saving...' : 'Save Changes'}
-                      </button>
+                        Save Changes
+                      </LoadingButton>
                     </div>
                   </form>
                 )}

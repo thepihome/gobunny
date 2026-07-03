@@ -5,6 +5,7 @@ import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { FiFilter, FiChevronDown, FiChevronUp, FiUser, FiX, FiRefreshCw } from 'react-icons/fi';
 import { useResizableColumns } from '../hooks/useResizableColumns';
+import LoadingButton from '../components/LoadingButton';
 import './Matches.css';
 
 const Matches = () => {
@@ -30,7 +31,7 @@ const Matches = () => {
   );
 
   // Fetch matches for each job
-  const { data: matchesData, isLoading: isLoadingMatches, refetch: refetchMatches } = useQuery(
+  const { data: matchesData, isLoading: isLoadingMatches, refetch: refetchMatches, isFetching: isFetchingMatches } = useQuery(
     ['all-matches', jobsData],
     async () => {
       if (user?.role === 'candidate') {
@@ -211,9 +212,14 @@ const Matches = () => {
             <FiFilter /> {showFilters ? 'Hide' : 'Show'} filters
           </button>
           {user?.role !== 'candidate' && (
-            <button type="button" className="btn btn-primary" onClick={() => refetchMatches()}>
-              <FiRefreshCw /> Refresh matches
-            </button>
+            <LoadingButton
+              className="btn btn-primary"
+              icon={FiRefreshCw}
+              loading={isFetchingMatches}
+              onClick={() => refetchMatches()}
+            >
+              Refresh matches
+            </LoadingButton>
           )}
         </div>
       </div>
@@ -369,16 +375,19 @@ const Matches = () => {
                             </p>
                           </div>
                           <div className="job-match-actions">
-                            <button
+                            <LoadingButton
                               className="btn btn-sm btn-primary"
+                              icon={FiRefreshCw}
+                              loading={autoMatchMutation.isLoading && autoMatchMutation.variables === job.id}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleAutoMatch(job.id);
                               }}
                               title="Re-match candidates"
+                              loadingLabel="Matching…"
                             >
-                              <FiRefreshCw /> Re-match
-                            </button>
+                              Re-match
+                            </LoadingButton>
                             {expandedJobs.has(job.id) ? <FiChevronUp /> : <FiChevronDown />}
                           </div>
                         </div>
@@ -462,16 +471,19 @@ const Matches = () => {
                             </p>
                           </div>
                           <div className="job-match-actions">
-                            <button
+                            <LoadingButton
                               className="btn btn-sm btn-primary"
+                              icon={FiRefreshCw}
+                              loading={autoMatchMutation.isLoading && autoMatchMutation.variables === job.id}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleAutoMatch(job.id);
                               }}
                               title="Re-match candidates"
+                              loadingLabel="Matching…"
                             >
-                              <FiRefreshCw /> Re-match
-                            </button>
+                              Re-match
+                            </LoadingButton>
                             {expandedJobs.has(job.id) ? <FiChevronUp /> : <FiChevronDown />}
                           </div>
                         </div>
@@ -546,16 +558,19 @@ const Matches = () => {
                         </p>
                       </div>
                       <div className="job-match-actions">
-                        <button
+                        <LoadingButton
                           className="btn btn-sm btn-primary"
+                          icon={FiRefreshCw}
+                          loading={autoMatchMutation.isLoading && autoMatchMutation.variables === job.id}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleAutoMatch(job.id);
                           }}
                           title="Re-match candidates"
+                          loadingLabel="Matching…"
                         >
-                          <FiRefreshCw /> Re-match
-                        </button>
+                          Re-match
+                        </LoadingButton>
                         <button
                           className="btn btn-sm btn-secondary"
                           onClick={(e) => {

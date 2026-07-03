@@ -5,7 +5,13 @@
     "root": "/"
   },
   "environment_variables": {
-    "REACT_APP_API_URL": "https://your-backend-url.com/api"
+    "production": {
+      "REACT_APP_API_URL": "https://gobunnyy-backend.<account>.workers.dev/api",
+      "REACT_APP_GOOGLE_CLIENT_ID": "<prod-google-oauth-client-id>"
+    },
+    "preview": {
+      "REACT_APP_API_URL": "https://gobunnyy-backend-dev.<account>.workers.dev/api",
+      "REACT_APP_GOOGLE_CLIENT_ID": "<dev-google-oauth-client-id>"
+    }
   }
 }
-

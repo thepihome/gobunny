@@ -1,12 +1,26 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../config/api';
-import { FiPlus, FiTrash2, FiUser, FiMail, FiPhone, FiShield, FiCalendar, FiX, FiUsers, FiEdit2, FiSave } from 'react-icons/fi';
+import { useAuth } from '../context/AuthContext';
+import { FiPlus, FiTrash2, FiUser, FiMail, FiCalendar, FiX, FiUsers, FiEdit2, FiSave } from 'react-icons/fi';
+import LoadingButton from '../components/LoadingButton';
+import UserActivityTimeline from '../components/UserActivityTimeline';
 import { useResizableColumns } from '../hooks/useResizableColumns';
 import './Users.css';
 
+const ROLE_FILTERS = [
+  { value: 'all', label: 'All users' },
+  { value: 'consultant', label: 'Consultants' },
+  { value: 'candidate', label: 'Candidates' },
+  { value: 'admin', label: 'Admins' },
+];
+
 const Users = () => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [detailTab, setDetailTab] = useState('profile');
   const [showModal, setShowModal] = useState(false);
   const [showUserDetails, setShowUserDetails] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -22,10 +36,23 @@ const Users = () => {
     is_active: true,
   });
 
+  const { tableRef, getColumnProps, ResizeHandle } = useResizableColumns(
+    [180, 220, 110, 120, 100, 120],
+    'users-table-columns',
+    [100, 120, 80, 90, 80, 100]
+  );
+
   const { data: users, isLoading } = useQuery(
     'users',
-    () => api.get('/users').then(res => res.data)
+    () => api.get('/users').then(res => res.data),
+    { enabled: user?.role === 'admin' }
   );
+
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    if (roleFilter === 'all') return users;
+    return users.filter((u) => u.role === roleFilter);
+  }, [users, roleFilter]);
 
   // Fetch detailed user info when a user is selected
   const { data: userDetails, isLoading: loadingDetails } = useQuery(
@@ -100,10 +127,11 @@ const Users = () => {
     }
   );
 
-  const handleUserClick = (user) => {
-    setSelectedUser(user);
+  const handleUserClick = (row) => {
+    setSelectedUser(row);
     setShowUserDetails(true);
     setIsEditing(false);
+    setDetailTab('profile');
   };
 
   const handleEditUser = () => {
@@ -163,6 +191,10 @@ const Users = () => {
     }
   };
 
+  if (user?.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+
   if (isLoading) {
     return <div className="loading">Loading users...</div>;
   }
@@ -170,7 +202,12 @@ const Users = () => {
   return (
     <div className="users-page list-page">
       <div className="page-header">
-        <h1>Users</h1>
+        <div>
+          <h1>Users</h1>
+          <p className="users-page-subtitle">
+            View all platform users, activity logs, and CRM interactions by user.
+          </p>
+        </div>
         <div className="list-page-header-actions">
           <button
             className="btn btn-primary"
@@ -194,6 +231,24 @@ const Users = () => {
         </div>
       </div>
 
+      <div className="users-role-filters">
+        {ROLE_FILTERS.map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            className={`users-role-filter${roleFilter === value ? ' active' : ''}`}
+            onClick={() => setRoleFilter(value)}
+          >
+            {label}
+            {users && (
+              <span className="users-role-filter-count">
+                {value === 'all' ? users.length : users.filter((u) => u.role === value).length}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
       <div className="users-table-container">
         <table ref={tableRef} className="table users-table" style={{ tableLayout: 'fixed', width: '100%' }}>
           <thead>
@@ -207,32 +262,32 @@ const Users = () => {
             </tr>
           </thead>
           <tbody>
-            {users && users.length > 0 ? (
-              users.map((user) => (
+            {filteredUsers.length > 0 ? (
+              filteredUsers.map((row) => (
                 <tr 
-                  key={user.id} 
+                  key={row.id} 
                   className="user-row"
-                  onClick={() => handleUserClick(user)}
+                  onClick={() => handleUserClick(row)}
                 >
                   <td>
                     <div className="user-name-cell">
                       <FiUser className="user-icon" />
-                      <span>{user.first_name} {user.last_name}</span>
+                      <span>{row.first_name} {row.last_name}</span>
                     </div>
                   </td>
-                  <td>{user.email}</td>
-                  <td><span className="badge badge-info">{user.role}</span></td>
-                  <td>{user.phone || 'N/A'}</td>
+                  <td>{row.email}</td>
+                  <td><span className={`badge badge-info badge-role-${row.role}`}>{row.role}</span></td>
+                  <td>{row.phone || 'N/A'}</td>
                   <td>
-                    <span className={`badge badge-${user.is_active ? 'success' : 'danger'}`}>
-                      {user.is_active ? 'Active' : 'Inactive'}
+                    <span className={`badge badge-${row.is_active ? 'success' : 'danger'}`}>
+                      {row.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   <td onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => {
-                        if (window.confirm(`Are you sure you want to delete ${user.first_name} ${user.last_name}?`)) {
-                          deleteMutation.mutate(user.id);
+                        if (window.confirm(`Are you sure you want to delete ${row.first_name} ${row.last_name}?`)) {
+                          deleteMutation.mutate(row.id);
                         }
                       }}
                       className="btn btn-danger btn-sm"
@@ -351,7 +406,7 @@ const Users = () => {
           <div className="modal-content user-details-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>
-                <FiUser /> User Details
+                <FiUser /> {selectedUser.first_name} {selectedUser.last_name}
               </h2>
               <button
                 className="btn-close-modal"
@@ -365,11 +420,34 @@ const Users = () => {
               </button>
             </div>
 
+            {!isEditing && (
+              <div className="user-detail-tabs">
+                <button
+                  type="button"
+                  className={`user-detail-tab${detailTab === 'profile' ? ' active' : ''}`}
+                  onClick={() => setDetailTab('profile')}
+                >
+                  Profile
+                </button>
+                {(selectedUser.role === 'consultant' || selectedUser.role === 'candidate') && (
+                  <button
+                    type="button"
+                    className={`user-detail-tab${detailTab === 'activity' ? ' active' : ''}`}
+                    onClick={() => setDetailTab('activity')}
+                  >
+                    Activity &amp; CRM
+                  </button>
+                )}
+              </div>
+            )}
+
             {loadingDetails ? (
               <div className="loading">Loading user details...</div>
             ) : userDetails ? (
               <>
-                {!isEditing ? (
+                {detailTab === 'activity' && !isEditing && (selectedUser.role === 'consultant' || selectedUser.role === 'candidate') ? (
+                  <UserActivityTimeline userId={selectedUser.id} userRole={selectedUser.role} />
+                ) : !isEditing ? (
                   // View Mode
                   <div className="user-details-view">
                     <div className="user-profile-header">
@@ -480,7 +558,6 @@ const Users = () => {
                     </div>
                   </div>
                 ) : (
-                  // Edit Mode
                   <form onSubmit={handleSaveUser} className="user-edit-form">
                     <div className="user-profile-header">
                       <div className="user-avatar">
@@ -580,13 +657,15 @@ const Users = () => {
                       >
                         Cancel
                       </button>
-                      <button 
-                        type="submit" 
+                      <LoadingButton
+                        type="submit"
                         className="btn btn-primary"
-                        disabled={updateMutation.isLoading}
+                        icon={FiSave}
+                        loading={updateMutation.isLoading}
+                        loadingLabel="Saving..."
                       >
-                        <FiSave /> {updateMutation.isLoading ? 'Saving...' : 'Save Changes'}
-                      </button>
+                        Save Changes
+                      </LoadingButton>
                     </div>
                   </form>
                 )}

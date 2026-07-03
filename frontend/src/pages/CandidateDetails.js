@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { FiEdit, FiSave, FiX, FiClock, FiSearch, FiFilter, FiChevronDown, FiChevronUp, FiUserPlus, FiUserMinus, FiExternalLink, FiDatabase } from 'react-icons/fi';
 import './CandidateDetails.css';
 import './CRM.css';
+import LoadingButton, { iconSpinClass } from '../components/LoadingButton';
 
 function crmStatusBadgeClass(status) {
   const s = status || 'open';
@@ -16,6 +17,48 @@ function crmStatusBadgeClass(status) {
 function formatCrmType(t) {
   if (!t) return 'Note';
   return String(t).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function parseStringArray(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return value.split(',').map((item) => item.trim()).filter(Boolean);
+    }
+  }
+  return [];
+}
+
+function hasProfileContent(profile) {
+  if (!profile || typeof profile !== 'object') return false;
+  const fields = [
+    'date_of_birth', 'years_of_experience', 'address', 'city', 'state', 'country',
+    'zip_code', 'current_job_title', 'job_classification_name', 'current_company',
+    'availability', 'linkedin_url', 'portfolio_url', 'github_url',
+    'expected_salary_min', 'expected_salary_max', 'work_authorization',
+    'summary', 'additional_notes',
+  ];
+  if (fields.some((field) => profile[field])) return true;
+  if (profile.willing_to_relocate) return true;
+  return parseStringArray(profile.preferred_locations).length > 0;
+}
+
+const LOG_ACTION_FILTERS = [
+  { value: '', label: 'All', tone: 'neutral' },
+  { value: 'create', label: 'Create', tone: 'create' },
+  { value: 'update', label: 'Update', tone: 'update' },
+  { value: 'delete', label: 'Delete', tone: 'delete' },
+  { value: 'view', label: 'View', tone: 'view' },
+];
+
+const KNOWN_LOG_ACTIONS = new Set(['create', 'update', 'delete', 'view']);
+
+function logActionClass(action) {
+  return KNOWN_LOG_ACTIONS.has(action) ? action : 'unknown';
 }
 
 const CandidateDetails = () => {
@@ -31,18 +74,14 @@ const CandidateDetails = () => {
   const [logAction, setLogAction] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
-  const { data: candidate, isLoading } = useQuery(
+  const { data: candidate, isLoading, isError, error } = useQuery(
     ['candidate', id],
-    () => api.get(`/candidates/${id}`).then(res => {
-      console.log('Candidate data received:', res.data);
-      console.log('Profile data:', res.data?.profile);
-      return res.data;
-    }),
+    () => api.get(`/candidates/${id}`).then(res => res.data),
     {
+      enabled: Boolean(id),
       onSuccess: (data) => {
-        if (data.profile) {
+        if (data?.profile) {
           setProfileData(data.profile);
-          console.log('Profile ID:', data.profile.id);
         }
       }
     }
@@ -190,8 +229,24 @@ const CandidateDetails = () => {
     setIsEditing(false);
   };
 
+  if (!id) {
+    return <div className="error">Invalid candidate ID</div>;
+  }
+
   if (isLoading) {
     return <div className="loading">Loading candidate details...</div>;
+  }
+
+  if (isError) {
+    const message = error?.response?.data?.error || error?.message || 'Failed to load candidate profile';
+    return (
+      <div className="candidate-details">
+        <div className="error">{message}</div>
+        <Link to="/candidates" className="btn btn-secondary" style={{ marginTop: '1rem' }}>
+          Back to Candidates
+        </Link>
+      </div>
+    );
   }
 
   if (!candidate) {
@@ -232,18 +287,19 @@ const CandidateDetails = () => {
                   }}
                   disabled={unassignMutation.isLoading}
                 >
-                  <FiUserMinus /> Unassign
+                  <FiUserMinus className={iconSpinClass(unassignMutation.isLoading)} /> {unassignMutation.isLoading ? 'Unassigning…' : 'Unassign'}
                 </button>
               </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '5px' }}>
                 <span style={{ color: '#666' }}>Not assigned</span>
-                <button
-                  className="btn btn-primary btn-sm"
+                <LoadingButton
+                  className="btn btn-success btn-sm"
+                  icon={FiUserPlus}
                   onClick={() => setShowAssignModal(true)}
                 >
-                  <FiUserPlus /> Assign Consultant
-                </button>
+                  Assign Consultant
+                </LoadingButton>
               </div>
             )}
           </div>
@@ -255,9 +311,15 @@ const CandidateDetails = () => {
           <h2>Profile Information</h2>
           {isEditing && (
             <div className="edit-actions">
-              <button className="btn btn-primary" onClick={handleSave} disabled={updateProfileMutation.isLoading}>
-                <FiSave /> {updateProfileMutation.isLoading ? 'Saving...' : 'Save'}
-              </button>
+              <LoadingButton
+                className="btn btn-success"
+                icon={FiSave}
+                loading={updateProfileMutation.isLoading}
+                loadingLabel="Saving..."
+                onClick={handleSave}
+              >
+                Save
+              </LoadingButton>
               <button className="btn btn-secondary" onClick={handleCancel}>
                 <FiX /> Cancel
               </button>
@@ -504,6 +566,12 @@ const CandidateDetails = () => {
           </div>
         ) : (
           <div className="profile-grid">
+            {!hasProfileContent(profile) && (
+              <p className="profile-empty-state">
+                No profile information yet.
+                {canEdit ? ' Click Edit Profile to add details.' : ''}
+              </p>
+            )}
             {profile.date_of_birth && (
               <div className="profile-item">
                 <strong>Date of Birth:</strong> {new Date(profile.date_of_birth).toLocaleDateString()}
@@ -554,12 +622,14 @@ const CandidateDetails = () => {
                 <strong>Work Authorization:</strong> {profile.work_authorization}
               </div>
             )}
+            {hasProfileContent(profile) && (
             <div className="profile-item">
               <strong>Willing to Relocate:</strong> {profile.willing_to_relocate ? 'Yes' : 'No'}
             </div>
-            {profile.preferred_locations && (Array.isArray(profile.preferred_locations) ? profile.preferred_locations.length > 0 : profile.preferred_locations) && (
+            )}
+            {profile.preferred_locations && parseStringArray(profile.preferred_locations).length > 0 && (
               <div className="profile-item">
-                <strong>Preferred Locations:</strong> {Array.isArray(profile.preferred_locations) ? profile.preferred_locations.join(', ') : profile.preferred_locations}
+                <strong>Preferred Locations:</strong> {parseStringArray(profile.preferred_locations).join(', ')}
               </div>
             )}
             {profile.summary && (
@@ -582,7 +652,9 @@ const CandidateDetails = () => {
         <h2>Resumes ({candidate.resumes ? candidate.resumes.length : 0}/3)</h2>
         {candidate.resumes && candidate.resumes.length > 0 ? (
           <div className="resumes-list">
-            {candidate.resumes.map((resume) => (
+            {candidate.resumes.map((resume) => {
+              const skills = parseStringArray(resume.skills);
+              return (
               <div key={resume.id} className="resume-item">
                 <div className="resume-item-header">
                   <h4>{resume.file_name || `Resume ${resume.id}`}</h4>
@@ -595,10 +667,10 @@ const CandidateDetails = () => {
                     )}
                   </span>
                 </div>
-                {resume.skills && resume.skills.length > 0 && (
+                {skills.length > 0 && (
                   <div className="skills-list">
                     <strong>Skills:</strong>
-                    {resume.skills.map((skill, idx) => (
+                    {skills.map((skill, idx) => (
                       <span key={idx} className="skill-tag">{skill}</span>
                     ))}
                   </div>
@@ -624,7 +696,8 @@ const CandidateDetails = () => {
                   </a>
                 )}
               </div>
-            ))}
+            );
+            })}
           </div>
         ) : (
           <p>No resumes uploaded</p>
@@ -719,7 +792,7 @@ const CandidateDetails = () => {
               </button>
               {!showAllLogs && activityLogs && activityLogs.length >= 5 && (
                 <button
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-info btn-sm"
                   onClick={() => setShowAllLogs(true)}
                 >
                   Show All <FiChevronDown />
@@ -754,17 +827,18 @@ const CandidateDetails = () => {
                 </div>
                 <div className="filter-group">
                   <label>Action Type</label>
-                  <select
-                    value={logAction}
-                    onChange={(e) => setLogAction(e.target.value)}
-                    className="filter-select"
-                  >
-                    <option value="">All Actions</option>
-                    <option value="create">Create</option>
-                    <option value="update">Update</option>
-                    <option value="delete">Delete</option>
-                    <option value="view">View</option>
-                  </select>
+                  <div className="activity-action-filters">
+                    {LOG_ACTION_FILTERS.map(({ value, label, tone }) => (
+                      <button
+                        key={value || 'all'}
+                        type="button"
+                        className={`activity-filter-btn activity-filter-btn--${tone}${logAction === value ? ' active' : ''}`}
+                        onClick={() => setLogAction(value)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
               <div className="filter-row">
@@ -813,10 +887,13 @@ const CandidateDetails = () => {
               </div>
               <div className="activity-list">
                 {activityLogs.map((log) => (
-                  <div key={log.id} className="activity-item">
+                  <div
+                    key={log.id}
+                    className={`activity-item activity-item--${logActionClass(log.action)}`}
+                  >
                     <div className="activity-header">
                       <div className="activity-action">
-                        <span className={`activity-badge activity-${log.action}`}>
+                        <span className={`activity-badge activity-${logActionClass(log.action)}`}>
                           {log.action}
                         </span>
                         {log.description && (
@@ -893,13 +970,16 @@ const CandidateDetails = () => {
                 >
                   Cancel
                 </button>
-                <button
+                <LoadingButton
                   type="submit"
-                  className="btn btn-primary"
-                  disabled={assignMutation.isLoading || !selectedConsultant}
+                  className="btn btn-success"
+                  icon={FiUserPlus}
+                  loading={assignMutation.isLoading}
+                  loadingLabel="Assigning..."
+                  disabled={!selectedConsultant}
                 >
-                  {assignMutation.isLoading ? 'Assigning...' : 'Assign'}
-                </button>
+                  Assign
+                </LoadingButton>
               </div>
             </form>
           </div>

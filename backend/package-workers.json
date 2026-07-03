@@ -5,15 +5,22 @@
   "main": "worker.js",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "dev": "wrangler dev --env dev",
+    "dev:prod": "wrangler dev --env production",
+    "deploy": "wrangler deploy --env production",
+    "deploy:prod": "wrangler deploy --env production",
+    "deploy:dev": "wrangler deploy --env dev",
     "db:create": "wrangler d1 create godashprodcore01",
+    "db:create:dev": "wrangler d1 create gobunny-dev",
     "db:migrate": "wrangler d1 execute godashprodcore01 --file=./database/d1-schema.sql",
-    "db:local": "wrangler d1 execute godashprodcore01 --local --file=./database/d1-schema.sql"
+    "db:migrate:dev": "wrangler d1 execute gobunny-dev --file=./database/d1-schema.sql --env dev",
+    "db:local": "wrangler d1 execute godashprodcore01 --local --file=./database/d1-schema.sql",
+    "db:local:dev": "wrangler d1 execute gobunny-dev --local --file=./database/d1-schema.sql --env dev",
+    "secret:prod": "echo 'Set secrets with: wrangler secret put NAME --env production'",
+    "secret:dev": "echo 'Set secrets with: wrangler secret put NAME --env dev'"
   },
   "dependencies": {},
   "devDependencies": {
     "wrangler": "^3.0.0"
   }
 }
-

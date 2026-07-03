@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { FiMenu, FiX, FiHome, FiBriefcase, FiFileText, FiUsers, FiClock, FiDatabase, FiSettings, FiLogOut, FiLayers } from 'react-icons/fi';
+import { FiMenu, FiX, FiHome, FiBriefcase, FiFileText, FiUsers, FiClock, FiDatabase, FiSettings, FiLogOut, FiLayers, FiUserCheck } from 'react-icons/fi';
 import { APP_UI_VERSION } from '../version';
 import NotificationBell from './NotificationBell';
+import ThemeToggle from './ThemeToggle';
 import './Layout.css';
 
 const Layout = ({ children }) => {
@@ -26,6 +27,7 @@ const Layout = ({ children }) => {
     { path: '/candidates', label: 'Candidates', icon: FiUsers, roles: ['consultant', 'admin'], permission: 'tab_candidates' },
     { path: '/timesheets', label: 'Timesheets', icon: FiClock, roles: ['consultant', 'admin'], permission: 'tab_timesheets' },
     { path: '/crm', label: 'CRM', icon: FiDatabase, roles: ['consultant', 'admin'], permission: 'tab_crm' },
+    { path: '/users', label: 'Users', icon: FiUserCheck, roles: ['admin'], permission: 'tab_users' },
     { path: '/metadata', label: 'Metadata', icon: FiLayers, roles: ['admin'], permission: 'tab_metadata' },
     // Register tab: admin-only in UI; permission 'tab_register' controls visibility via settings/groups in future
     { path: '/register', label: 'Register', icon: FiUsers, roles: ['admin'], permission: 'tab_register' },
@@ -49,6 +51,7 @@ const Layout = ({ children }) => {
             </span>
           </Link>
           <div className="navbar-trailing">
+            <ThemeToggle compact />
             <NotificationBell />
             <div className="navbar-user">
               <span>{user?.first_name} {user?.last_name}</span>

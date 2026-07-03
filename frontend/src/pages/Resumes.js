@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../config/api';
 import { FiUpload, FiTrash2, FiFileText } from 'react-icons/fi';
 import './Resumes.css';
+import LoadingButton from '../components/LoadingButton';
 
 const Resumes = () => {
   const queryClient = useQueryClient();
@@ -167,9 +168,9 @@ const Resumes = () => {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={uploadMutation.isLoading}>
-                  {uploadMutation.isLoading ? 'Uploading...' : 'Upload'}
-                </button>
+                <LoadingButton type="submit" className="btn btn-primary" icon={FiUpload} loading={uploadMutation.isLoading} loadingLabel="Uploading...">
+                  Upload
+                </LoadingButton>
               </div>
             </form>
           </div>

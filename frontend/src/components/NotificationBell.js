@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useQuery } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '../config/api';
 import {
@@ -12,8 +12,10 @@ import {
   FiUserPlus,
   FiCheckSquare,
   FiDatabase,
+  FiTrash2,
 } from 'react-icons/fi';
 import './NotificationBell.css';
+import LoadingButton from './LoadingButton';
 
 const TYPE_META = {
   new_job: { Icon: FiBriefcase, label: 'Jobs' },
@@ -36,6 +38,7 @@ const NotificationBell = () => {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data, isLoading, isFetching } = useQuery(
     'notifications',
@@ -43,8 +46,26 @@ const NotificationBell = () => {
     { refetchInterval: 90 * 1000, refetchOnWindowFocus: true }
   );
 
+  const markSeenMutation = useMutation(
+    () => api.post('/notifications/seen'),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('notifications');
+      },
+    }
+  );
+
+  const clearMutation = useMutation(
+    () => api.post('/notifications/clear'),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('notifications');
+      },
+    }
+  );
+
   const list = data?.notifications || [];
-  const count = list.length;
+  const unreadCount = data?.unreadCount ?? list.filter((n) => n.unread !== false).length;
 
   useEffect(() => {
     const onDoc = (e) => {
@@ -56,9 +77,25 @@ const NotificationBell = () => {
     return () => document.removeEventListener('mousedown', onDoc);
   }, [open]);
 
+  const toggleOpen = () => {
+    setOpen((prev) => {
+      const next = !prev;
+      if (next && unreadCount > 0) {
+        markSeenMutation.mutate();
+      }
+      return next;
+    });
+  };
+
   const onItemClick = (href) => {
     if (href) navigate(href);
     setOpen(false);
+  };
+
+  const handleClearAll = (e) => {
+    e.stopPropagation();
+    if (list.length === 0 || clearMutation.isLoading) return;
+    clearMutation.mutate();
   };
 
   return (
@@ -66,22 +103,42 @@ const NotificationBell = () => {
       <button
         type="button"
         className="notification-bell-btn"
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggleOpen}
         aria-expanded={open}
         aria-haspopup="true"
-        aria-label={`Notifications${count ? `, ${count} items` : ''}`}
+        aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
       >
         <FiBell className="notification-bell-icon" />
-        {count > 0 && (
-          <span className="notification-bell-badge">{count > 99 ? '99+' : count}</span>
+        {unreadCount > 0 && (
+          <span className="notification-bell-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
         )}
       </button>
 
       {open && (
         <div className="notification-panel" role="dialog" aria-label="Notifications list">
           <div className="notification-panel-head">
-            <strong>Notifications</strong>
-            {(isLoading || isFetching) && <span className="notification-panel-sync">Updating…</span>}
+            <div className="notification-panel-head-main">
+              <strong>Notifications</strong>
+              {unreadCount > 0 && (
+                <span className="notification-panel-unread">{unreadCount} unread</span>
+              )}
+            </div>
+            <div className="notification-panel-head-actions">
+              {(isLoading || isFetching) && (
+                <span className="notification-panel-sync">Updating…</span>
+              )}
+              {list.length > 0 && (
+                <LoadingButton
+                  className="notification-clear-btn"
+                  icon={FiTrash2}
+                  loading={clearMutation.isLoading}
+                  loadingLabel="Clearing…"
+                  onClick={handleClearAll}
+                >
+                  Clear all
+                </LoadingButton>
+              )}
+            </div>
           </div>
           <ul className="notification-list">
             {isLoading && !list.length && (
@@ -94,7 +151,7 @@ const NotificationBell = () => {
               <li key={n.id}>
                 <button
                   type="button"
-                  className="notification-item"
+                  className={`notification-item${n.unread ? ' notification-item--unread' : ''}`}
                   onClick={() => onItemClick(n.href)}
                 >
                   <span className="notification-item-icon">
@@ -107,6 +164,7 @@ const NotificationBell = () => {
                       <span className="notification-item-tag">{TYPE_META[n.type].label}</span>
                     )}
                   </span>
+                  {n.unread && <span className="notification-item-dot" aria-label="Unread" />}
                 </button>
               </li>
             ))}

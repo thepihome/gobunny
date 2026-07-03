@@ -14,6 +14,7 @@ import CandidateDetails from './pages/CandidateDetails';
 import Timesheets from './pages/Timesheets';
 import CRM from './pages/CRM';
 import Metadata from './pages/Metadata';
+import Users from './pages/Users';
 import Settings from './pages/Settings';
 import Layout from './components/Layout';
 import { ThemeProvider } from './context/ThemeContext';
@@ -42,6 +43,7 @@ function App() {
                       <Route path="/register" element={<RegisterCandidates />} />
                           <Route path="/timesheets" element={<Timesheets />} />
                           <Route path="/crm" element={<CRM />} />
+                          <Route path="/users" element={<Users />} />
                           <Route path="/metadata" element={<Metadata />} />
                           <Route path="/settings" element={<Settings />} />
                       <Route path="*" element={<Navigate to="/" replace />} />

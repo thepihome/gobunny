@@ -4,39 +4,44 @@
 
 import { query, queryOne, execute } from '../utils/db.js';
 import { addCorsHeaders } from '../utils/cors.js';
-import { authorize } from '../middleware/auth.js';
+import { authorize, isSelfOrAdmin } from '../middleware/auth.js';
+import { hashPassword } from '../utils/crypto.js';
+import { queueTransactionalEmail } from '../utils/emailService.js';
 
-/**
- * Hash password using Web Crypto API (PBKDF2) - same as auth.js
- */
-async function hashPassword(password) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+function sanitizeUser(row) {
+  if (!row) return row;
+  const { password_hash, ...safe } = row;
+  return safe;
 }
 
-export async function handleUsers(request, env, user) {
+function sanitizeUsers(rows) {
+  return (rows || []).map(sanitizeUser);
+}
+
+function forbiddenResponse(env, request, message = 'Insufficient permissions') {
+  return addCorsHeaders(
+    new Response(
+      JSON.stringify({ error: message }),
+      { status: 403, headers: { 'Content-Type': 'application/json' } }
+    ),
+    env,
+    request
+  );
+}
+
+export async function handleUsers(request, env, user, ctx) {
   const url = new URL(request.url);
   const path = url.pathname;
   const method = request.method;
 
-  // All user management endpoints require admin role
-  const authError = authorize('admin')(user);
-  if (authError) {
-    return addCorsHeaders(
-      new Response(
-        JSON.stringify({ error: authError.error }),
-        { status: authError.status, headers: { 'Content-Type': 'application/json' } }
-      ),
-      env,
-      request
-    );
-  }
+  const userDetailMatch = path.match(/^\/api\/users\/(\d+)$/);
+  const passwordMatch = path.match(/^\/api\/users\/(\d+)\/password$/);
+  const userActivityMatch = path.match(/^\/api\/users\/(\d+)\/activity$/);
 
-  // Get all users
+  // Get all users (admin only)
   if (path === '/api/users' && method === 'GET') {
+    const authError = authorize('admin')(user);
+    if (authError) return forbiddenResponse(env, request, authError.error);
     try {
       const users = await query(
         env,
@@ -48,7 +53,7 @@ export async function handleUsers(request, env, user) {
 
       return addCorsHeaders(
         new Response(
-          JSON.stringify(users || []),
+          JSON.stringify(sanitizeUsers(users)),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         ),
         env,
@@ -67,8 +72,10 @@ export async function handleUsers(request, env, user) {
     }
   }
 
-  // Create new user
+  // Create new user (admin only)
   if (path === '/api/users' && method === 'POST') {
+    const authError = authorize('admin')(user);
+    if (authError) return forbiddenResponse(env, request, authError.error);
     try {
       const body = await request.json();
       const { email, password, first_name, last_name, role, phone, is_active } = body;
@@ -159,12 +166,21 @@ export async function handleUsers(request, env, user) {
         [userId]
       );
 
-      // Remove password_hash from response
-      delete newUser.password_hash;
+      const emailVars = {
+        first_name: newUser.first_name,
+        last_name: newUser.last_name,
+        email: newUser.email,
+        role: newUser.role,
+      };
+      if (role === 'candidate') {
+        queueTransactionalEmail(ctx, env, 'candidate_onboarded', newUser.email, emailVars);
+      } else {
+        queueTransactionalEmail(ctx, env, 'user_created', newUser.email, emailVars);
+      }
 
       return addCorsHeaders(
         new Response(
-          JSON.stringify(newUser),
+          JSON.stringify(sanitizeUser(newUser)),
           { status: 201, headers: { 'Content-Type': 'application/json' } }
         ),
         env,
@@ -183,11 +199,226 @@ export async function handleUsers(request, env, user) {
     }
   }
 
-  // Get single user with details
-  const userDetailMatch = path.match(/^\/api\/users\/(\d+)$/);
-  if (userDetailMatch && method === 'GET') {
+  // User activity timeline (admin only)
+  if (userActivityMatch && method === 'GET') {
+    const authError = authorize('admin')(user);
+    if (authError) return forbiddenResponse(env, request, authError.error);
     try {
-      const userId = userDetailMatch[1];
+      const targetUserId = parseInt(userActivityMatch[1], 10);
+      const { searchParams } = url;
+      const search = searchParams.get('search');
+      const dateFrom = searchParams.get('date_from');
+      const dateTo = searchParams.get('date_to');
+      const action = searchParams.get('action');
+      const kind = searchParams.get('kind') || 'all';
+      const limit = Math.min(parseInt(searchParams.get('limit') || '150', 10), 300);
+
+      const targetUser = await queryOne(
+        env,
+        'SELECT id, email, first_name, last_name, role FROM users WHERE id = ?',
+        [targetUserId]
+      );
+
+      if (!targetUser) {
+        return addCorsHeaders(
+          new Response(
+            JSON.stringify({ error: 'User not found' }),
+            { status: 404, headers: { 'Content-Type': 'application/json' } }
+          ),
+          env,
+          request
+        );
+      }
+
+      const items = [];
+
+      const pushLog = (log) => {
+        if (log.metadata && typeof log.metadata === 'string') {
+          try {
+            log.metadata = JSON.parse(log.metadata);
+          } catch {
+            log.metadata = null;
+          }
+        }
+        items.push({
+          id: `log-${log.id}`,
+          kind: 'activity_log',
+          action: log.action,
+          description: log.description,
+          field_name: log.field_name,
+          old_value: log.old_value,
+          new_value: log.new_value,
+          entity_type: log.entity_type,
+          entity_id: log.entity_id,
+          user_id: log.user_id,
+          user_name: log.user_name,
+          created_at: log.created_at,
+          sort_at: log.created_at,
+        });
+      };
+
+      const pushCrm = (row) => {
+        items.push({
+          id: `crm-${row.id}`,
+          kind: 'crm',
+          action: row.interaction_type,
+          description: row.notes,
+          status: row.status,
+          consultant_id: row.consultant_id,
+          consultant_name: [row.consultant_first_name, row.consultant_last_name].filter(Boolean).join(' ').trim(),
+          candidate_id: row.candidate_id,
+          candidate_name: [row.candidate_first_name, row.candidate_last_name].filter(Boolean).join(' ').trim(),
+          follow_up_date: row.follow_up_date,
+          interaction_date: row.interaction_date,
+          created_at: row.created_at,
+          sort_at: row.interaction_date || row.created_at,
+        });
+      };
+
+      const logFilters = [];
+      const logParams = [];
+      const crmFilters = [];
+      const crmParams = [];
+
+      if (search) {
+        const term = `%${search}%`;
+        logFilters.push('(al.description LIKE ? OR al.field_name LIKE ? OR u.first_name || \' \' || u.last_name LIKE ?)');
+        logParams.push(term, term, term);
+        crmFilters.push('(c.notes LIKE ? OR u.first_name || \' \' || u.last_name LIKE ? OR c2.first_name || \' \' || c2.last_name LIKE ?)');
+        crmParams.push(term, term, term);
+      }
+      if (action) {
+        logFilters.push('al.action = ?');
+        logParams.push(action);
+      }
+      if (dateFrom) {
+        logFilters.push('DATE(al.created_at) >= DATE(?)');
+        logParams.push(dateFrom);
+        crmFilters.push('DATE(COALESCE(c.interaction_date, c.created_at)) >= DATE(?)');
+        crmParams.push(dateFrom);
+      }
+      if (dateTo) {
+        logFilters.push('DATE(al.created_at) <= DATE(?)');
+        logParams.push(dateTo);
+        crmFilters.push('DATE(COALESCE(c.interaction_date, c.created_at)) <= DATE(?)');
+        crmParams.push(dateTo);
+      }
+
+      const extraLogWhere = logFilters.length ? ` AND ${logFilters.join(' AND ')}` : '';
+      const extraCrmWhere = crmFilters.length ? ` AND ${crmFilters.join(' AND ')}` : '';
+
+      if (kind !== 'crm' && (targetUser.role === 'consultant' || targetUser.role === 'admin')) {
+        const logs = await query(
+          env,
+          `SELECT al.*, u.first_name || ' ' || u.last_name as user_name
+           FROM activity_logs al
+           LEFT JOIN users u ON al.user_id = u.id
+           WHERE al.user_id = ?${extraLogWhere}
+           ORDER BY al.created_at DESC
+           LIMIT ?`,
+          [targetUserId, ...logParams, limit]
+        );
+        (logs || []).forEach(pushLog);
+      }
+
+      if (kind !== 'activity' && targetUser.role === 'consultant') {
+        const crmRows = await query(
+          env,
+          `SELECT c.*,
+                  u.first_name as consultant_first_name, u.last_name as consultant_last_name,
+                  c2.first_name as candidate_first_name, c2.last_name as candidate_last_name
+           FROM crm_contacts c
+           LEFT JOIN users u ON c.consultant_id = u.id
+           LEFT JOIN users c2 ON c.candidate_id = c2.id
+           WHERE c.consultant_id = ?${extraCrmWhere}
+           ORDER BY c.interaction_date DESC, c.created_at DESC
+           LIMIT ?`,
+          [targetUserId, ...crmParams, limit]
+        );
+        (crmRows || []).forEach(pushCrm);
+      }
+
+      if (targetUser.role === 'candidate') {
+        if (kind !== 'crm') {
+          const profile = await queryOne(
+            env,
+            'SELECT id FROM candidate_profiles WHERE user_id = ?',
+            [targetUserId]
+          );
+          if (profile?.id) {
+            const logs = await query(
+              env,
+              `SELECT al.*, u.first_name || ' ' || u.last_name as user_name
+               FROM activity_logs al
+               LEFT JOIN users u ON al.user_id = u.id
+               WHERE al.entity_type = 'candidate_profile' AND al.entity_id = ?${extraLogWhere}
+               ORDER BY al.created_at DESC
+               LIMIT ?`,
+              [profile.id, ...logParams, limit]
+            );
+            (logs || []).forEach(pushLog);
+          }
+        }
+        if (kind !== 'activity') {
+          const crmRows = await query(
+            env,
+            `SELECT c.*,
+                    u.first_name as consultant_first_name, u.last_name as consultant_last_name,
+                    c2.first_name as candidate_first_name, c2.last_name as candidate_last_name
+             FROM crm_contacts c
+             LEFT JOIN users u ON c.consultant_id = u.id
+             LEFT JOIN users c2 ON c.candidate_id = c2.id
+             WHERE c.candidate_id = ?${extraCrmWhere}
+             ORDER BY c.interaction_date DESC, c.created_at DESC
+             LIMIT ?`,
+            [targetUserId, ...crmParams, limit]
+          );
+          (crmRows || []).forEach(pushCrm);
+        }
+      }
+
+      items.sort((a, b) => String(b.sort_at || '').localeCompare(String(a.sort_at || '')));
+      const trimmed = items.slice(0, limit);
+
+      const activityCount = trimmed.filter((i) => i.kind === 'activity_log').length;
+      const crmCount = trimmed.filter((i) => i.kind === 'crm').length;
+
+      return addCorsHeaders(
+        new Response(
+          JSON.stringify({
+            user: targetUser,
+            items: trimmed,
+            counts: {
+              activity_logs: activityCount,
+              crm: crmCount,
+              total: trimmed.length,
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        ),
+        env,
+        request
+      );
+    } catch (error) {
+      console.error('Error fetching user activity:', error);
+      return addCorsHeaders(
+        new Response(
+          JSON.stringify({ error: 'Server error', details: error.message }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        ),
+        env,
+        request
+      );
+    }
+  }
+
+  // Get single user (self or admin)
+  if (userDetailMatch && method === 'GET') {
+    const userId = userDetailMatch[1];
+    if (!isSelfOrAdmin(user, userId)) {
+      return forbiddenResponse(env, request);
+    }
+    try {
 
       const userData = await queryOne(
         env,
@@ -219,14 +450,11 @@ export async function handleUsers(request, env, user) {
         [userId]
       );
 
-      // Remove password_hash
-      delete userData.password_hash;
-
       return addCorsHeaders(
         new Response(
           JSON.stringify({
-            ...userData,
-            groups: groups || []
+            ...sanitizeUser(userData),
+            groups: groups || [],
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         ),
@@ -246,12 +474,21 @@ export async function handleUsers(request, env, user) {
     }
   }
 
-  // Update user
+  // Update user (self or admin; only admin may change role/is_active)
   if (userDetailMatch && method === 'PUT') {
     try {
       const userId = userDetailMatch[1];
+      if (!isSelfOrAdmin(user, userId)) {
+        return forbiddenResponse(env, request);
+      }
+
       const body = await request.json();
-      const { email, first_name, last_name, role, phone, is_active } = body;
+      let { email, first_name, last_name, role, phone, is_active } = body;
+
+      if (user.role !== 'admin') {
+        role = undefined;
+        is_active = undefined;
+      }
 
       // Check if user exists
       const existing = await queryOne(
@@ -362,11 +599,9 @@ export async function handleUsers(request, env, user) {
         [userId]
       );
 
-      delete updated.password_hash;
-
       return addCorsHeaders(
         new Response(
-          JSON.stringify(updated),
+          JSON.stringify(sanitizeUser(updated)),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         ),
         env,
@@ -385,11 +620,14 @@ export async function handleUsers(request, env, user) {
     }
   }
 
-  // Update user password
-  const passwordMatch = path.match(/^\/api\/users\/(\d+)\/password$/);
+  // Update user password (self or admin)
   if (passwordMatch && method === 'PUT') {
     try {
       const userId = passwordMatch[1];
+      if (!isSelfOrAdmin(user, userId)) {
+        return forbiddenResponse(env, request);
+      }
+
       const body = await request.json();
       const { password } = body;
 
@@ -452,8 +690,11 @@ export async function handleUsers(request, env, user) {
     }
   }
 
-  // Delete user
+  // Delete user (admin only)
   if (userDetailMatch && method === 'DELETE') {
+    const authError = authorize('admin')(user);
+    if (authError) return forbiddenResponse(env, request, authError.error);
+
     try {
       const userId = userDetailMatch[1];
 

@@ -7,7 +7,16 @@
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd backend && npm run dev",
     "client": "cd frontend && npm start",
-    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install && cd ../tests/playwright && npm install",
+    "test:install": "cd tests/playwright && npm install && npx playwright install chromium",
+    "test:unit": "cd frontend && npm test -- --watchAll=false",
+    "test:smoke": "cd tests/playwright && npm run test:smoke",
+    "test:sanity": "cd tests/playwright && npm run test:sanity",
+    "test:regression": "cd tests/playwright && npm run test:regression",
+    "test:e2e": "cd tests/playwright && npm test",
+    "test:all": "npm run test:unit && npm run test:e2e",
+    "deploy:worker:prod": "cd backend && npx wrangler deploy --env production",
+    "deploy:worker:dev": "cd backend && npx wrangler deploy --env dev"
   },
   "keywords": ["gobunnyy", "dashboard", "recruitment"],
   "author": "",

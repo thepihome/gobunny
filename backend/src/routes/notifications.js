@@ -1,9 +1,11 @@
 /**
  * Aggregated in-app notifications for the navbar bell.
- * GET /api/notifications
+ * GET  /api/notifications
+ * POST /api/notifications/seen  — mark current notifications as seen (badge resets)
+ * POST /api/notifications/clear — dismiss all current notifications from the list
  */
 
-import { query } from '../utils/db.js';
+import { query, queryOne, execute } from '../utils/db.js';
 import { addCorsHeaders } from '../utils/cors.js';
 
 function json(env, request, data, status = 200) {
@@ -24,25 +26,69 @@ function sortItems(items) {
     .slice(0, 60);
 }
 
-export async function handleNotifications(request, env, user) {
-  const url = new URL(request.url);
-  if (url.pathname !== '/api/notifications' || request.method !== 'GET') {
-    return addCorsHeaders(
-      new Response(JSON.stringify({ error: 'Not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } }),
+async function getLastSeenAt(env, userId) {
+  try {
+    const row = await queryOne(
       env,
-      request
+      'SELECT last_seen_at FROM user_notification_state WHERE user_id = ?',
+      [userId]
+    );
+    return row?.last_seen_at || null;
+  } catch (e) {
+    console.warn('getLastSeenAt:', e.message);
+    return null;
+  }
+}
+
+async function getDismissedIds(env, userId) {
+  try {
+    const rows = await query(
+      env,
+      'SELECT notification_id FROM notification_dismissals WHERE user_id = ?',
+      [userId]
+    );
+    return new Set((rows || []).map((row) => row.notification_id));
+  } catch (e) {
+    console.warn('getDismissedIds:', e.message);
+    return new Set();
+  }
+}
+
+function isUnread(notification, lastSeenAt) {
+  if (!lastSeenAt) return true;
+  return String(notification.sortAt) > String(lastSeenAt);
+}
+
+function countUnread(notifications, lastSeenAt) {
+  return notifications.filter((n) => isUnread(n, lastSeenAt)).length;
+}
+
+async function markNotificationsSeen(env, userId) {
+  await execute(
+    env,
+    `INSERT INTO user_notification_state (user_id, last_seen_at)
+     VALUES (?, datetime('now'))
+     ON CONFLICT(user_id) DO UPDATE SET last_seen_at = datetime('now')`,
+    [userId]
+  );
+}
+
+async function dismissNotificationIds(env, userId, ids) {
+  for (const notificationId of ids) {
+    await execute(
+      env,
+      `INSERT OR IGNORE INTO notification_dismissals (user_id, notification_id, dismissed_at)
+       VALUES (?, ?, datetime('now'))`,
+      [userId, notificationId]
     );
   }
+}
 
-  if (!user?.id) {
-    return json(env, request, { error: 'Unauthorized' }, 401);
-  }
-
+async function collectNotifications(env, user) {
   const items = [];
   const role = user.role;
   const uid = user.id;
 
-  try {
     /* --- New jobs (active, recently posted) --- */
     if (role === 'admin' || role === 'consultant' || role === 'candidate') {
       const jobLimit = role === 'candidate' ? 8 : 12;
@@ -385,11 +431,61 @@ export async function handleNotifications(request, env, user) {
       }
     }
 
-    const sorted = sortItems(items);
-    return json(env, request, {
-      notifications: sorted,
-      count: sorted.length,
-    });
+    return sortItems(items);
+}
+
+export async function handleNotifications(request, env, user) {
+  const url = new URL(request.url);
+  const path = url.pathname;
+  const method = request.method;
+
+  if (!path.startsWith('/api/notifications')) {
+    return addCorsHeaders(
+      new Response(JSON.stringify({ error: 'Not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } }),
+      env,
+      request
+    );
+  }
+
+  if (!user?.id) {
+    return json(env, request, { error: 'Unauthorized' }, 401);
+  }
+
+  try {
+    if (path === '/api/notifications/seen' && method === 'POST') {
+      await markNotificationsSeen(env, user.id);
+      return json(env, request, { success: true });
+    }
+
+    if (path === '/api/notifications/clear' && method === 'POST') {
+      const allItems = await collectNotifications(env, user);
+      await dismissNotificationIds(env, user.id, allItems.map((item) => item.id));
+      await markNotificationsSeen(env, user.id);
+      return json(env, request, { success: true, cleared: allItems.length });
+    }
+
+    if (path === '/api/notifications' && method === 'GET') {
+      const [allItems, lastSeenAt, dismissedIds] = await Promise.all([
+        collectNotifications(env, user),
+        getLastSeenAt(env, user.id),
+        getDismissedIds(env, user.id),
+      ]);
+
+      const visible = allItems
+        .filter((item) => !dismissedIds.has(item.id))
+        .map((item) => ({
+          ...item,
+          unread: isUnread(item, lastSeenAt),
+        }));
+
+      return json(env, request, {
+        notifications: visible,
+        count: visible.length,
+        unreadCount: countUnread(visible, lastSeenAt),
+      });
+    }
+
+    return json(env, request, { error: 'Not found' }, 404);
   } catch (e) {
     console.error('handleNotifications', e);
     return json(env, request, { error: 'Server error', details: e.message }, 500);

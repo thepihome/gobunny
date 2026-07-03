@@ -13,8 +13,10 @@ import {
   FiUser,
   FiBriefcase,
   FiFileText,
+  FiSave,
 } from 'react-icons/fi';
 import './Timesheets.css';
+import LoadingButton, { iconSpinClass } from '../components/LoadingButton';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
@@ -392,9 +394,10 @@ const Timesheets = () => {
                         type="button"
                         className="btn btn-success timesheet-card__btn"
                         onClick={() => submitMutation.mutate(ts.id)}
-                        disabled={submitMutation.isLoading}
+                        disabled={submitMutation.isLoading && submitMutation.variables === ts.id}
                       >
-                        <FiCheck /> Submit
+                        <FiCheck className={iconSpinClass(submitMutation.isLoading && submitMutation.variables === ts.id)} />
+                        {submitMutation.isLoading && submitMutation.variables === ts.id ? 'Submitting…' : 'Submit'}
                       </button>
                     </>
                   )}
@@ -404,17 +407,19 @@ const Timesheets = () => {
                         type="button"
                         className="btn btn-success timesheet-card__btn"
                         onClick={() => approveMutation.mutate({ id: ts.id, action: 'approve' })}
-                        disabled={approveMutation.isLoading}
+                        disabled={approveMutation.isLoading && approveMutation.variables?.id === ts.id}
                       >
-                        <FiCheck /> Approve
+                        <FiCheck className={iconSpinClass(approveMutation.isLoading && approveMutation.variables?.id === ts.id && approveMutation.variables?.action === 'approve')} />
+                        {approveMutation.isLoading && approveMutation.variables?.id === ts.id && approveMutation.variables?.action === 'approve' ? 'Approving…' : 'Approve'}
                       </button>
                       <button
                         type="button"
                         className="btn btn-danger timesheet-card__btn"
                         onClick={() => approveMutation.mutate({ id: ts.id, action: 'reject' })}
-                        disabled={approveMutation.isLoading}
+                        disabled={approveMutation.isLoading && approveMutation.variables?.id === ts.id}
                       >
-                        <FiX /> Reject
+                        <FiX className={iconSpinClass(approveMutation.isLoading && approveMutation.variables?.id === ts.id && approveMutation.variables?.action === 'reject')} />
+                        {approveMutation.isLoading && approveMutation.variables?.id === ts.id && approveMutation.variables?.action === 'reject' ? 'Rejecting…' : 'Reject'}
                       </button>
                     </>
                   )}
@@ -508,17 +513,15 @@ const Timesheets = () => {
                   Cancel
                 </button>
                 {(!editingTimesheet || editingTimesheet.status === 'draft') && (
-                  <button
+                  <LoadingButton
                     type="submit"
                     className="btn btn-primary"
-                    disabled={createMutation.isLoading || updateMutation.isLoading}
+                    icon={FiSave}
+                    loading={createMutation.isLoading || updateMutation.isLoading}
+                    loadingLabel="Saving…"
                   >
-                    {createMutation.isLoading || updateMutation.isLoading
-                      ? 'Saving…'
-                      : editingTimesheet
-                        ? 'Save changes'
-                        : 'Create'}
-                  </button>
+                    {editingTimesheet ? 'Save changes' : 'Create'}
+                  </LoadingButton>
                 )}
               </div>
             </form>

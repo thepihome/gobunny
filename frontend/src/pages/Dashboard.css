@@ -447,14 +447,6 @@
   color: var(--text-secondary-color);
 }
 
-.spin {
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 @media (max-width: 640px) {
   .dashboard-header-actions {
     width: 100%;

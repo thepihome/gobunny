@@ -5,6 +5,7 @@ import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { FiPlus, FiUser, FiMail, FiPhone, FiTrash2, FiX, FiSave, FiArrowUp, FiArrowDown, FiUsers, FiEdit3, FiFilter } from 'react-icons/fi';
 import { useResizableColumns } from '../hooks/useResizableColumns';
+import LoadingButton from '../components/LoadingButton';
 import './Candidates.css';
 
 /** Map register_candidates row → candidate form defaults (fname/lname/email/phone/position/start_date/price/ref). */
@@ -259,7 +260,7 @@ const Candidates = () => {
 
   const { data: registerRows = [], isLoading: registerRowsLoading, isError: registerRowsError } = useQuery(
     ['register-candidates', 'picker'],
-    () => api.get('/register-candidates').then((res) => res.data),
+    () => api.get('/register-candidates?exclude_onboarded=1').then((res) => res.data),
     {
       enabled: user?.role === 'admin' && showRegisterSelectModal,
       refetchOnWindowFocus: false,
@@ -687,6 +688,7 @@ const Candidates = () => {
     {
       onSuccess: () => {
         queryClient.invalidateQueries('candidates');
+        queryClient.invalidateQueries(['register-candidates', 'picker']);
         setShowAddModal(false);
         setAddCandidateSource(null);
         setSelectedRegisterRow(null);
@@ -1369,7 +1371,11 @@ const Candidates = () => {
                 </div>
               )}
               {!registerRowsLoading && !registerRowsError && filteredRegisterRows.length === 0 && (
-                <div className="empty-state" style={{ padding: 24 }}>No matching records.</div>
+                <div className="empty-state" style={{ padding: 24 }}>
+                  {registerPickerSearch.trim()
+                    ? 'No matching records.'
+                    : 'No register candidates available to onboard. They may already exist as candidates.'}
+                </div>
               )}
               {!registerRowsLoading && !registerRowsError && filteredRegisterRows.length > 0 && (
                 <table className="table" style={{ margin: 0, fontSize: 14 }}>
@@ -1842,13 +1848,15 @@ const Candidates = () => {
                 >
                   Cancel
                 </button>
-                <button
+                <LoadingButton
                   type="submit"
-                  className="btn btn-primary"
-                  disabled={createCandidateMutation.isLoading}
+                  className="btn btn-success"
+                  icon={FiPlus}
+                  loading={createCandidateMutation.isLoading}
+                  loadingLabel="Creating..."
                 >
-                  {createCandidateMutation.isLoading ? 'Creating...' : 'Create Candidate'}
-                </button>
+                  Create Candidate
+                </LoadingButton>
               </div>
             </form>
           </div>
@@ -2280,13 +2288,15 @@ const Candidates = () => {
                 >
                   Cancel
                 </button>
-                <button
+                <LoadingButton
                   type="submit"
                   className="btn btn-primary"
-                  disabled={updateCandidateMutation.isLoading}
+                  icon={FiSave}
+                  loading={updateCandidateMutation.isLoading}
+                  loadingLabel="Updating..."
                 >
-                  {updateCandidateMutation.isLoading ? 'Updating...' : 'Update Candidate'}
-                </button>
+                  Update Candidate
+                </LoadingButton>
               </div>
             </form>
           </div>

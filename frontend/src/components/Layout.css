@@ -6,7 +6,7 @@
 
 .navbar {
   min-height: var(--navbar-height);
-  background: rgba(255, 255, 255, 0.96);
+  background: color-mix(in srgb, var(--navbar-color) 96%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   color: var(--text-heading);
@@ -18,7 +18,7 @@
   transition:
     background 0.25s ease,
     box-shadow 0.25s ease;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  border-bottom: 1px solid var(--border-color);
 }
 
 [data-navbar-style='dark'] .navbar {
@@ -199,6 +199,7 @@
 
 .sidebar-backdrop {
   display: none;
+  background: color-mix(in srgb, var(--text-heading) 40%, transparent);
 }
 
 .sidebar {
@@ -300,7 +301,6 @@
     right: 0;
     top: var(--navbar-height);
     bottom: 0;
-    background: rgba(15, 23, 42, 0.4);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     z-index: 998;

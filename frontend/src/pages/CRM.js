@@ -11,6 +11,7 @@ import {
   FiEdit2,
   FiTrash2,
   FiCheck,
+  FiSave,
   FiPhone,
   FiMail,
   FiCalendar,
@@ -27,6 +28,7 @@ import {
   FiX,
 } from 'react-icons/fi';
 import './CRM.css';
+import LoadingButton, { iconSpinClass } from '../components/LoadingButton';
 
 const TYPE_CONFIG = {
   call: { label: 'Phone call', Icon: FiPhone },
@@ -609,10 +611,10 @@ const CRM = () => {
                           type="button"
                           className="btn btn-success crm-card__btn"
                           onClick={() => markComplete(row)}
-                          disabled={updateMutation.isLoading}
+                          disabled={updateMutation.isLoading && updateMutation.variables?.id === row.id}
                           title="Mark completed"
                         >
-                          <FiCheck />
+                          <FiCheck className={iconSpinClass(updateMutation.isLoading && updateMutation.variables?.id === row.id)} />
                         </button>
                       )}
                       <button type="button" className="btn btn-secondary crm-card__btn" onClick={() => openEdit(row)} title="Edit">
@@ -622,10 +624,10 @@ const CRM = () => {
                         type="button"
                         className="btn btn-danger crm-card__btn"
                         onClick={() => confirmDelete(row)}
-                        disabled={deleteMutation.isLoading}
+                        disabled={deleteMutation.isLoading && deleteMutation.variables === row.id}
                         title="Delete"
                       >
-                        <FiTrash2 />
+                        <FiTrash2 className={iconSpinClass(deleteMutation.isLoading && deleteMutation.variables === row.id)} />
                       </button>
                     </div>
                   )}
@@ -774,17 +776,15 @@ const CRM = () => {
                 <button type="button" className="btn btn-secondary" onClick={closeModal}>
                   Cancel
                 </button>
-                <button
+                <LoadingButton
                   type="submit"
                   className="btn btn-primary"
-                  disabled={createMutation.isLoading || updateMutation.isLoading}
+                  icon={FiSave}
+                  loading={createMutation.isLoading || updateMutation.isLoading}
+                  loadingLabel="Saving…"
                 >
-                  {createMutation.isLoading || updateMutation.isLoading
-                    ? 'Saving…'
-                    : editing
-                      ? 'Save changes'
-                      : 'Create'}
-                </button>
+                  {editing ? 'Save changes' : 'Create'}
+                </LoadingButton>
               </div>
             </form>
           </div>

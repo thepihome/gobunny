@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
-import { FiMapPin, FiDollarSign, FiExternalLink } from 'react-icons/fi';
+import { FiMapPin, FiDollarSign, FiExternalLink, FiRefreshCw } from 'react-icons/fi';
 import './JobDetails.css';
+import LoadingButton from '../components/LoadingButton';
 
 const JobDetails = () => {
   const { id } = useParams();
@@ -158,14 +159,15 @@ const JobDetails = () => {
                     ))}
                   </select>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleMatch}
+                <LoadingButton
                   className="btn btn-primary"
-                  disabled={matchMutation.isLoading}
+                  icon={FiRefreshCw}
+                  loading={matchMutation.isLoading}
+                  loadingLabel="Matching…"
+                  onClick={handleMatch}
                 >
-                  {matchMutation.isLoading ? 'Matching…' : 'Match resume'}
-                </button>
+                  Match resume
+                </LoadingButton>
               </div>
             </div>
           </div>

@@ -3,8 +3,9 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
-import { FiPlus, FiMapPin, FiDollarSign, FiX, FiBriefcase, FiLink, FiEdit, FiTrash2, FiZap, FiFilter } from 'react-icons/fi';
+import { FiPlus, FiMapPin, FiDollarSign, FiX, FiBriefcase, FiLink, FiEdit, FiTrash2, FiZap, FiFilter, FiSave } from 'react-icons/fi';
 import { useResizableColumns } from '../hooks/useResizableColumns';
+import LoadingButton, { iconSpinClass } from '../components/LoadingButton';
 import './Jobs.css';
 
 const JOB_COL_WIDTHS_CANDIDATE = [150, 250, 180, 100, 120, 96, 118];
@@ -397,9 +398,9 @@ const Jobs = () => {
                           }}
                           className="btn btn-secondary btn-sm"
                           title="AI match candidates to this job"
-                          disabled={aiMatchJobMutation.isLoading}
+                          disabled={aiMatchJobMutation.isLoading && aiMatchJobMutation.variables === job.id}
                         >
-                          <FiZap />
+                          <FiZap className={iconSpinClass(aiMatchJobMutation.isLoading && aiMatchJobMutation.variables === job.id)} />
                         </button>
                         <button
                           onClick={(e) => handleEditJob(job, e)}
@@ -412,8 +413,9 @@ const Jobs = () => {
                           onClick={(e) => handleDeleteJob(job, e)}
                           className="btn btn-danger btn-sm"
                           title="Delete job"
+                          disabled={deleteJobMutation.isLoading && deleteJobMutation.variables === job.id}
                         >
-                          <FiTrash2 />
+                          <FiTrash2 className={iconSpinClass(deleteJobMutation.isLoading && deleteJobMutation.variables === job.id)} />
                         </button>
                       </div>
                     </td>
@@ -643,15 +645,15 @@ const Jobs = () => {
                 >
                   Cancel
                 </button>
-                <button
+                <LoadingButton
                   type="submit"
                   className="btn btn-primary"
-                  disabled={createJobMutation.isLoading || updateJobMutation.isLoading}
+                  icon={FiSave}
+                  loading={createJobMutation.isLoading || updateJobMutation.isLoading}
+                  loadingLabel={editingJob ? 'Updating...' : 'Posting...'}
                 >
-                  {createJobMutation.isLoading || updateJobMutation.isLoading 
-                    ? (editingJob ? 'Updating...' : 'Posting...') 
-                    : (editingJob ? 'Update Job' : 'Post Job')}
-                </button>
+                  {editingJob ? 'Update Job' : 'Post Job'}
+                </LoadingButton>
               </div>
             </form>
           </div>

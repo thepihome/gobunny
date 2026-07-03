@@ -1,0 +1,39 @@
+name: Deploy Cloudflare Workers
+
+on:
+  push:
+    branches:
+      - main
+      - dev/godash-future-builds
+    paths:
+      - 'backend/**'
+      - '.github/workflows/cloudflare-workers.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Wrangler
+        run: npm install wrangler@3.99.0
+
+      - name: Deploy production worker
+        if: github.ref == 'refs/heads/main'
+        run: npx wrangler deploy --config wrangler.toml --env production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      - name: Deploy dev worker
+        if: github.ref == 'refs/heads/dev/godash-future-builds'
+        run: npx wrangler deploy --config wrangler.toml --env dev
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

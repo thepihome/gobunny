@@ -62,24 +62,36 @@ Or via CLI (if available):
 
 ### 5. Set Environment Secrets
 
+Production and dev/preview use **separate Workers** (`--env production` vs `--env dev`). Set secrets per environment:
+
 ```bash
-# Set JWT secret
-wrangler secret put JWT_SECRET
-# When prompted, enter a strong random string
+# Production (main branch frontend)
+wrangler secret put JWT_SECRET --env production
+wrangler secret put JWT_EXPIRE --env production   # e.g. 7d
+wrangler secret put GOOGLE_CLIENT_ID --env production
+wrangler secret put FRONTEND_URLS --env production
+# e.g. https://godash.gobunnyy.com,https://gobunny.pages.dev
 
-# Set JWT expiration
-wrangler secret put JWT_EXPIRE
-# When prompted, enter: 7d
+# Dev / preview (dev/godash-future-builds frontend)
+wrangler secret put JWT_SECRET --env dev
+wrangler secret put JWT_EXPIRE --env dev
+wrangler secret put GOOGLE_CLIENT_ID --env dev
+wrangler secret put FRONTEND_URLS --env dev
+# e.g. https://dev-godash-future-builds.gobunnyy.pages.dev,http://localhost:3000
+```
 
-# Set frontend URL (update after deploying frontend)
-wrangler secret put FRONTEND_URL
-# When prompted, enter: https://your-app.pages.dev
+Before first dev deploy, create the dev D1 database and update `[env.dev]` in `wrangler.toml`:
+
+```bash
+wrangler d1 create gobunny-dev
+wrangler d1 execute gobunny-dev --file=./database/d1-schema.sql --env dev
+wrangler r2 bucket create resume-uploads-dev   # optional
 ```
 
 ### 6. Test Locally
 
 ```bash
-wrangler dev
+wrangler dev --env dev
 ```
 
 This will start a local development server. Test the health endpoint:
@@ -87,13 +99,21 @@ This will start a local development server. Test the health endpoint:
 curl http://localhost:8787/api/health
 ```
 
-### 7. Deploy to Production
+### 7. Deploy
 
 ```bash
-wrangler deploy
+# Production worker (main)
+wrangler deploy --env production
+
+# Dev worker (preview branch)
+wrangler deploy --env dev
 ```
 
-After deployment, note your Workers URL (e.g., `https://gobunnyy-backend.your-subdomain.workers.dev`)
+After deployment, note your Workers URLs:
+- Production: `https://gobunnyy-backend.<account>.workers.dev`
+- Dev: `https://gobunnyy-backend-dev.<account>.workers.dev`
+
+Set matching `REACT_APP_API_URL` and `REACT_APP_GOOGLE_CLIENT_ID` in Cloudflare Pages → **Production** vs **Preview** environment variables.
 
 ## Common Issues
 

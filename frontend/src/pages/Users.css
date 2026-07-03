@@ -46,13 +46,108 @@
   flex-shrink: 0;
 }
 
-/* User Details Modal */
 .user-details-modal {
-  max-width: 800px;
+  max-width: 900px;
   max-height: 90vh;
   overflow-y: auto;
 }
 
+.users-page-subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.users-role-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.users-role-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  background: var(--surface-color, #fff);
+  color: var(--text-color);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.15s ease;
+}
+
+.users-role-filter:hover,
+.users-role-filter.active {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+}
+
+.users-role-filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--glass-table-header, #f0f2f5);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.user-detail-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 0.5rem;
+}
+
+.user-detail-tab {
+  padding: 0.45rem 0.9rem;
+  border: none;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.user-detail-tab.active {
+  color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+}
+
+.user-activity-hint {
+  margin: 0 0 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.user-activity-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.badge-role-consultant {
+  background: #e8f4fd;
+  color: #1565c0;
+}
+
+.badge-role-candidate {
+  background: #edf7ed;
+  color: #2e7d32;
+}
+
+.badge-role-admin {
+  background: #f3e8fd;
+  color: #6a1b9a;
+}
+
+/* User Details Modal */
 .modal-header {
   display: flex;
   justify-content: space-between;

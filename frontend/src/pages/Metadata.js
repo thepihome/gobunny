@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { FiDatabase, FiBriefcase, FiPlus, FiEdit, FiTrash2, FiX, FiSave } from 'react-icons/fi';
 import { useResizableColumns } from '../hooks/useResizableColumns';
 import './Metadata.css';
+import LoadingButton, { iconSpinClass } from '../components/LoadingButton';
 
 const Metadata = () => {
   const { user } = useAuth();
@@ -211,8 +212,9 @@ const Metadata = () => {
                                 className="btn-icon btn-delete"
                                 onClick={() => handleDeleteRole(role)}
                                 title="Delete"
+                                disabled={deleteRoleMutation.isLoading && deleteRoleMutation.variables === role.id}
                               >
-                                <FiTrash2 />
+                                <FiTrash2 className={iconSpinClass(deleteRoleMutation.isLoading && deleteRoleMutation.variables === role.id)} />
                               </button>
                             </div>
                           </td>
@@ -275,9 +277,15 @@ const Metadata = () => {
                 <button type="button" className="btn btn-secondary" onClick={() => setShowRoleModal(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={createRoleMutation.isLoading || updateRoleMutation.isLoading}>
-                  <FiSave /> {editingRole ? 'Update' : 'Create'} Role
-                </button>
+                <LoadingButton
+                  type="submit"
+                  className="btn btn-primary"
+                  icon={FiSave}
+                  loading={createRoleMutation.isLoading || updateRoleMutation.isLoading}
+                  loadingLabel={editingRole ? 'Updating…' : 'Creating…'}
+                >
+                  {editingRole ? 'Update' : 'Create'} Role
+                </LoadingButton>
               </div>
             </form>
           </div>

@@ -250,6 +250,19 @@ CREATE TABLE IF NOT EXISTS app_settings (
   updated_at TEXT DEFAULT (datetime('now'))
 );
 
+-- Notification bell: seen timestamp + per-item dismissals
+CREATE TABLE IF NOT EXISTS user_notification_state (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  last_seen_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS notification_dismissals (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  notification_id TEXT NOT NULL,
+  dismissed_at TEXT DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, notification_id)
+);
+
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_activity_logs_user ON activity_logs(user_id);
@@ -265,5 +278,6 @@ CREATE INDEX IF NOT EXISTS idx_consultant_assignments_candidate ON consultant_as
 CREATE INDEX IF NOT EXISTS idx_timesheets_user ON timesheets(user_id);
 CREATE INDEX IF NOT EXISTS idx_timesheets_date ON timesheets(date);
 CREATE INDEX IF NOT EXISTS idx_kpis_user ON kpis(user_id);
+CREATE INDEX IF NOT EXISTS idx_notification_dismissals_user ON notification_dismissals(user_id);
 
 -- After creating a fresh D1 DB, seed permissions + role_permissions (see database/migrations/seed_permissions_d1.sql).

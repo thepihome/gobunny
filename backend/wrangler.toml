@@ -1,35 +1,63 @@
-name = "gobunnyy-backend"
+# Worker entry — deploy from the backend/ directory:
+#   npx wrangler deploy --env production
+#   npx wrangler deploy --env dev
 main = "worker.js"
 compatibility_date = "2024-01-01"
 
-# D1 Database bindings
-# Primary app database
-[[d1_databases]]
+# ---------------------------------------------------------------------------
+# Production — main branch frontend (Cloudflare Pages "Production" env)
+# Secrets: wrangler secret put GOOGLE_CLIENT_ID --env production
+#   GOOGLE_CLIENT_ID, JWT_SECRET, JWT_EXPIRE, FRONTEND_URLS
+# ---------------------------------------------------------------------------
+[env.production]
+name = "gobunnyy-backend"
+main = "worker.js"
+
+# Production D1 + R2 (default bindings)
+[[env.production.d1_databases]]
 binding = "DB"
 database_name = "godashprodcore01"
 database_id = "c1a7e500-7dfb-4113-9234-eccdee6b55bc"
 
-# External registrations database
-[[d1_databases]]
+[[env.production.d1_databases]]
 binding = "REGISTER_DB"
 database_name = "gowebprodcore"
 database_id = "32a0b7d7-0725-4afd-9dcb-a7a7b2aa5f8d"
 
-# R2 Bucket binding for file uploads
-[[r2_buckets]]
+[[env.production.r2_buckets]]
 binding = "R2_BUCKET"
 bucket_name = "resume-uploads"
 
-# Environment variables (set via wrangler secret put or in dashboard)
-# JWT_SECRET - set via: wrangler secret put JWT_SECRET
-# JWT_EXPIRE - set via: wrangler secret put JWT_EXPIRE
-# FRONTEND_URL - set via: wrangler secret put FRONTEND_URL
-# FRONTEND_URLS - comma-separated list for multiple frontends (Pages + custom domain):
-#   wrangler secret put FRONTEND_URLS
-#   https://gobunny.pages.dev,https://godash.gobunnyy.com
-# GOOGLE_CLIENT_ID - your Google OAuth 2.0 Web client ID (for Google Sign-In)
-# Set via: wrangler secret put GOOGLE_CLIENT_ID
 
-[env.production]
-# Production-specific settings can go here
 
+# ---------------------------------------------------------------------------
+# Dev / preview — dev/godash-future-builds (Cloudflare Pages "Preview" env)
+# Deploy: wrangler deploy --env dev
+# Secrets: wrangler secret put GOOGLE_CLIENT_ID --env dev
+#   GOOGLE_CLIENT_ID     — dev Google OAuth Web client ID
+#   JWT_SECRET, JWT_EXPIRE — use different values from production
+#   FRONTEND_URLS        — e.g. https://dev-godash-future-builds.gobunnyy.pages.dev,http://localhost:3000
+#
+# Before first dev deploy:
+#   wrangler d1 create gobunny-dev
+#   Replace database_id below with the new ID, then:
+#   wrangler d1 execute gobunny-dev --file=./database/d1-schema.sql --env dev
+# Optional: wrangler r2 bucket create resume-uploads-dev
+# ---------------------------------------------------------------------------
+[env.dev]
+name = "gobunnyy-backend-dev"
+main = "worker.js"
+
+[[env.dev.d1_databases]]
+binding = "DB"
+database_name = "godashdevcore01"
+database_id = "12817295-68e1-4f7e-9cd8-35fa76ea4820"
+
+[[env.dev.d1_databases]]
+binding = "REGISTER_DB"
+database_name = "gowebdevcore"
+database_id = "dffbbf99-6000-4678-a042-4dba94635548"
+
+[[env.dev.r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "resume-uploads-dev"

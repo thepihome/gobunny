@@ -171,11 +171,13 @@
   gap: 0.5rem 0.65rem;
 }
 
-/* Utility Classes */
-.container {
-  max-width: 1200px;
+/* Utility Classes — container defined in index.css; page-level override */
+.list-page.container,
+.page-container {
+  max-width: var(--container-xl);
   margin: 0 auto;
-  padding: 0 20px;
+  width: 100%;
+  padding: 0 var(--space-4);
 }
 
 .card {
@@ -256,6 +258,51 @@
 .btn-danger:hover {
   background-color: #b91c1c;
   border-color: #b91c1c;
+}
+
+.btn-info {
+  background-color: var(--info-color);
+  color: white;
+  border-color: var(--info-color);
+}
+
+.btn-info:hover {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.btn-warning {
+  background-color: var(--warning-color);
+  color: white;
+  border-color: var(--warning-color);
+}
+
+.btn-warning:hover {
+  background-color: #b45309;
+  border-color: #b45309;
+}
+
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@keyframes icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.icon-spin {
+  animation: icon-spin 0.75s linear infinite;
+  transform-origin: center;
+}
+
+.btn-icon.is-loading,
+.btn.is-loading {
+  cursor: wait;
 }
 
 .btn-sm {

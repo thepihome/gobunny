@@ -108,12 +108,36 @@ router.get('/:id', authenticate, authorize('consultant', 'admin'), async (req, r
       [req.params.id]
     );
 
+    const parseJsonArray = (value) => {
+      if (!value) return [];
+      if (Array.isArray(value)) return value;
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      }
+      return [];
+    };
+
+    const profile = profileResult.rows[0] || null;
+
     res.json({
       ...candidate,
-      resumes: resumesResult.rows,
+      resumes: resumesResult.rows.map((resume) => ({
+        ...resume,
+        skills: parseJsonArray(resume.skills),
+      })),
       matches: matchesResult.rows,
       crm_interactions: crmResult.rows,
-      profile: profileResult.rows[0] || null,
+      profile: profile
+        ? {
+            ...profile,
+            preferred_locations: parseJsonArray(profile.preferred_locations),
+          }
+        : null,
     });
   } catch (error) {
     console.error('Error fetching candidate details:', error);

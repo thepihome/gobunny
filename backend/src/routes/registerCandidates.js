@@ -4,6 +4,7 @@
 
 import { addCorsHeaders } from '../utils/cors.js';
 import { authorize } from '../middleware/auth.js';
+import { query } from '../utils/db.js';
 
 async function registerQuery(env, sql, params = []) {
   let stmt = env.REGISTER_DB.prepare(sql);
@@ -32,17 +33,39 @@ export async function handleRegisterCandidates(request, env, user) {
     );
   }
 
-  // List all register candidates
+  // List all register candidates (?exclude_onboarded=1 omits rows already created as platform candidates)
   if (path === '/api/register-candidates' && method === 'GET') {
     try {
+      const excludeOnboarded =
+        url.searchParams.get('exclude_onboarded') === '1' ||
+        url.searchParams.get('exclude_onboarded') === 'true';
+
       const rows = await registerQuery(
         env,
         'SELECT * FROM register_candidates ORDER BY created_at DESC'
       );
 
+      let result = rows || [];
+
+      if (excludeOnboarded && result.length > 0) {
+        const existing = await query(
+          env,
+          `SELECT LOWER(TRIM(email)) AS email FROM users
+           WHERE role = 'candidate' AND email IS NOT NULL AND TRIM(email) != ''`
+        );
+        const onboardedEmails = new Set(
+          existing.map((row) => row.email).filter(Boolean)
+        );
+        result = result.filter((row) => {
+          const email = String(row.email || '').trim().toLowerCase();
+          if (!email) return true;
+          return !onboardedEmails.has(email);
+        });
+      }
+
       return addCorsHeaders(
         new Response(
-          JSON.stringify(rows || []),
+          JSON.stringify(result),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         ),
         env,

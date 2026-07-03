@@ -7,19 +7,25 @@
 :root {
   --navbar-height: 72px;
 
-  /* GoBunny brand palette (matches gobunnyy.com) */
+  /* Semantic aliases (ArchitectUX foundation) */
+  --bg-primary: #fafbfc;
+  --bg-secondary: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+
+  /* GoBunny brand palette */
   --primary-color: #2b3d7e;
   --primary-hover: #1e2d5f;
   --primary-light: #3d5299;
   --secondary-color: #64748b;
   --accent-color: #2b3d7e;
-  --background-color: #fafbfc;
-  --surface-color: #ffffff;
+  --background-color: var(--bg-primary);
+  --surface-color: var(--bg-secondary);
   --surface-elevated: #ffffff;
   --surface-muted: #f1f5f9;
-  --text-color: #1e293b;
+  --text-color: var(--text-primary);
   --text-heading: #0f172a;
-  --text-secondary-color: #64748b;
+  --text-secondary-color: var(--text-secondary);
   --text-muted: #94a3b8;
   --border-color: #e2e8f0;
   --border-light: #f1f5f9;
@@ -30,36 +36,32 @@
   --error-color: #dc2626;
   --info-color: #2563eb;
 
-  /* Subtle page background */
   --mesh-gradient: linear-gradient(180deg, #f8fafc 0%, #fafbfc 55%, #ffffff 100%);
 
-  /* Enterprise surfaces — clean white panels, minimal glass */
   --glass-panel-bg: #ffffff;
   --glass-panel-border: rgba(15, 23, 42, 0.08);
   --glass-sidebar-bg: #ffffff;
   --glass-filter-bg: #f8fafc;
   --glass-table-header: #f8fafc;
 
-  /* Shadows */
   --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
   --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
   --shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.08);
   --shadow-xl: 0 16px 40px rgba(15, 23, 42, 0.1);
   --shadow-glass: 0 1px 3px rgba(15, 23, 42, 0.06);
 
-  /* Brand accents */
   --gradient-primary: #2b3d7e;
   --gradient-secondary: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
   --gradient-surface: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+  --gradient-profile: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
 
-  /* Border Radius */
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-full: 9999px;
 
-  /* Fluid typography scale */
+  /* Typography scale */
   --text-xs: clamp(0.6875rem, 0.65rem + 0.15vw, 0.75rem);
   --text-sm: clamp(0.8125rem, 0.78rem + 0.2vw, 0.875rem);
   --text-base: clamp(0.9375rem, 0.9rem + 0.2vw, 1rem);
@@ -68,9 +70,104 @@
   --text-2xl: clamp(1.5rem, 1.3rem + 1vw, 2rem);
   --text-3xl: clamp(1.75rem, 1.5rem + 1.25vw, 2.25rem);
 
-  /* Responsive spacing */
+  /* Spacing system (4px grid) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
   --space-page: clamp(1rem, 2.5vw, 2rem);
   --space-section: clamp(1rem, 2vw, 1.5rem);
+
+  /* Container breakpoints */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+}
+
+/* Explicit dark theme */
+[data-theme='dark'] {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+
+  --primary-color: #5b7fd4;
+  --primary-hover: #4a6bc4;
+  --primary-light: #7b9ae0;
+  --secondary-color: #94a3b8;
+  --background-color: var(--bg-primary);
+  --surface-color: var(--bg-secondary);
+  --surface-elevated: #1e293b;
+  --surface-muted: #334155;
+  --text-color: var(--text-primary);
+  --text-heading: #f8fafc;
+  --text-secondary-color: var(--text-secondary);
+  --text-muted: #64748b;
+  --border-color: #334155;
+  --border-light: #1e293b;
+  --navbar-color: #0f172a;
+  --sidebar-bg: #1e293b;
+
+  --mesh-gradient: linear-gradient(168deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+
+  --glass-panel-bg: #1e293b;
+  --glass-panel-border: rgba(148, 163, 184, 0.14);
+  --glass-sidebar-bg: #1e293b;
+  --glass-filter-bg: #0f172a;
+  --glass-table-header: #0f172a;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+/* System theme preference (when no explicit light override) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+
+    --primary-color: #5b7fd4;
+    --primary-hover: #4a6bc4;
+    --primary-light: #7b9ae0;
+    --secondary-color: #94a3b8;
+    --background-color: var(--bg-primary);
+    --surface-color: var(--bg-secondary);
+    --surface-elevated: #1e293b;
+    --surface-muted: #334155;
+    --text-color: var(--text-primary);
+    --text-heading: #f8fafc;
+    --text-secondary-color: var(--text-secondary);
+    --text-muted: #64748b;
+    --border-color: #334155;
+    --border-light: #1e293b;
+    --navbar-color: #0f172a;
+    --sidebar-bg: #1e293b;
+
+    --mesh-gradient: linear-gradient(168deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+
+    --glass-panel-bg: #1e293b;
+    --glass-panel-border: rgba(148, 163, 184, 0.14);
+    --glass-sidebar-bg: #1e293b;
+    --glass-filter-bg: #0f172a;
+    --glass-table-header: #0f172a;
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.35);
+  }
 }
 
 html {
@@ -109,4 +206,72 @@ code {
 *:focus-visible {
   outline: 2px solid var(--primary-color);
   outline-offset: 2px;
+}
+
+/* Typography utilities */
+.text-heading-1 {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-heading);
+  margin-bottom: var(--space-6);
+}
+
+.text-heading-2 {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-heading);
+  margin-bottom: var(--space-4);
+}
+
+.text-heading-3 {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-heading);
+  margin-bottom: var(--space-3);
+}
+
+.text-body {
+  font-size: var(--text-base);
+  color: var(--text-color);
+  line-height: 1.55;
+}
+
+.text-muted {
+  color: var(--text-secondary-color);
+}
+
+/* Layout utilities */
+.container {
+  width: 100%;
+  max-width: var(--container-lg);
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+.container-sm {
+  max-width: var(--container-sm);
+}
+
+.container-md {
+  max-width: var(--container-md);
+}
+
+.container-xl {
+  max-width: var(--container-xl);
+}
+
+.grid-2-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-8);
+}
+
+@media (max-width: 768px) {
+  .grid-2-col {
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
 }
