@@ -14,6 +14,20 @@ import {
 import { EMAIL_ACTIONS } from '../utils/emailConstants.js';
 import { sendTestEmail } from '../utils/emailService.js';
 
+function isEmailRoot(pathNorm) {
+  return pathNorm === '/api/permissions/email' || pathNorm === '/api/settings/email';
+}
+
+function isEmailTest(pathNorm) {
+  return pathNorm === '/api/permissions/email/test' || pathNorm === '/api/settings/email/test';
+}
+
+function emailTemplateResetMatch(pathNorm) {
+  return pathNorm.match(/^\/api\/(?:permissions|settings)\/email\/templates\/([a-z_]+)\/reset$/);
+}
+
+export { isEmailRoot, isEmailTest, emailTemplateResetMatch };
+
 export async function handleEmailSettingsAdmin(request, env, user) {
   const method = request.method;
   const url = new URL(request.url);
@@ -31,7 +45,7 @@ export async function handleEmailSettingsAdmin(request, env, user) {
     );
   }
 
-  if (pathNorm === '/api/permissions/email' && method === 'GET') {
+  if (isEmailRoot(pathNorm) && method === 'GET') {
     const config = await getEmailConfig(env);
     const pub = toPublicEmailConfig(config);
     pub.action_catalog = EMAIL_ACTIONS;
@@ -45,7 +59,7 @@ export async function handleEmailSettingsAdmin(request, env, user) {
     );
   }
 
-  if (pathNorm === '/api/permissions/email' && method === 'PUT') {
+  if (isEmailRoot(pathNorm) && method === 'PUT') {
     try {
       const body = await request.json();
       const current = await getEmailConfig(env);
@@ -125,7 +139,7 @@ export async function handleEmailSettingsAdmin(request, env, user) {
     }
   }
 
-  const resetMatch = pathNorm.match(/^\/api\/permissions\/email\/templates\/([a-z_]+)\/reset$/);
+  const resetMatch = emailTemplateResetMatch(pathNorm);
   if (resetMatch && method === 'POST') {
     const actionId = resetMatch[1];
     const defaults = resetTemplateToDefault(actionId);
@@ -156,7 +170,7 @@ export async function handleEmailSettingsAdmin(request, env, user) {
     );
   }
 
-  if (pathNorm === '/api/permissions/email/test' && method === 'POST') {
+  if (isEmailTest(pathNorm) && method === 'POST') {
     try {
       const body = await request.json();
       const to = String(body.to || user.email || '').trim();
@@ -210,4 +224,29 @@ export async function handleEmailSettingsAdmin(request, env, user) {
     env,
     request
   );
+}
+
+/** Alias at /api/settings/email (same handler as /api/permissions/email). */
+export async function handleEmailSettings(request, env, user) {
+  const path = (new URL(request.url).pathname || '/').replace(/\/+$/, '') || '/';
+  const allowed = [
+    '/api/settings/email',
+    '/api/settings/email/test',
+    /^\/api\/settings\/email\/templates\/[a-z_]+\/reset$/,
+  ];
+  const ok =
+    allowed[0] === path ||
+    allowed[1] === path ||
+    allowed[2].test(path);
+  if (!ok) {
+    return addCorsHeaders(
+      new Response(JSON.stringify({ error: 'Not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+      env,
+      request
+    );
+  }
+  return handleEmailSettingsAdmin(request, env, user);
 }

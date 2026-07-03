@@ -6,7 +6,12 @@ import { query, queryOne, execute } from '../utils/db.js';
 import { addCorsHeaders } from '../utils/cors.js';
 import { authorize } from '../middleware/auth.js';
 import { handleAiMatchingAdmin } from './aiSettings.js';
-import { handleEmailSettingsAdmin } from './emailSettings.js';
+import {
+  handleEmailSettingsAdmin,
+  isEmailRoot,
+  isEmailTest,
+  emailTemplateResetMatch,
+} from './emailSettings.js';
 
 export async function handlePermissions(request, env, user) {
   const url = new URL(request.url);
@@ -33,9 +38,9 @@ export async function handlePermissions(request, env, user) {
   }
 
   if (
-    pathNorm === '/api/permissions/email' ||
-    pathNorm === '/api/permissions/email/test' ||
-    /^\/api\/permissions\/email\/templates\/[a-z_]+\/reset$/.test(pathNorm)
+    isEmailRoot(pathNorm) ||
+    isEmailTest(pathNorm) ||
+    emailTemplateResetMatch(pathNorm)
   ) {
     return handleEmailSettingsAdmin(request, env, user);
   }

@@ -39,10 +39,10 @@ const EmailSettings = () => {
     templates: {},
   });
 
-  const { data, isLoading } = useQuery(
+  const { data, isLoading, isError, error } = useQuery(
     ['settings-email'],
     () => api.get('/permissions/email').then((r) => r.data),
-    { refetchOnWindowFocus: false }
+    { refetchOnWindowFocus: false, retry: false }
   );
 
   useEffect(() => {
@@ -137,6 +137,27 @@ const EmailSettings = () => {
   };
 
   if (isLoading) return <div className="loading">Loading email settings…</div>;
+
+  if (isError) {
+    const status = error?.response?.status;
+    const msg = error?.response?.data?.error || error?.message;
+    return (
+      <div className="settings-section email-settings">
+        <h2><FiMail /> Email &amp; SMTP</h2>
+        <div className="error" style={{ marginTop: 16 }}>
+          <p><strong>Could not load email settings{status ? ` (${status})` : ''}.</strong></p>
+          <p>{msg || 'The API endpoint may not be deployed yet.'}</p>
+          {status === 404 && (
+            <p style={{ marginTop: 12, fontSize: 14, color: 'var(--text-muted, #666)' }}>
+              Deploy the latest backend Worker (includes <code>/api/permissions/email</code>).
+              Production deploys from <code>main</code>; the email feature is on{' '}
+              <code>dev/godash-future-builds</code> until merged.
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const catalog = data?.action_catalog || [];
 

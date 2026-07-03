@@ -18,6 +18,7 @@ import { handleCRM } from './routes/crm.js';
 import { handleActivityLogs } from './routes/activityLogs.js';
 import { handleJobRoles } from './routes/jobRoles.js';
 import { handleAiSettings } from './routes/aiSettings.js';
+import { handleEmailSettings } from './routes/emailSettings.js';
 import { handleNotifications } from './routes/notifications.js';
 import { handleDashboard } from './routes/dashboard.js';
 import { handleScanner, handleScannerInternal } from './routes/scanner.js';
@@ -195,6 +196,8 @@ export async function handleRequest(request, env, ctx) {
       response = await handleJobRoles(request, env, user);
     } else if (path.startsWith('/api/settings/ai-matching')) {
       response = await handleAiSettings(request, env, user);
+    } else if (path.startsWith('/api/settings/email')) {
+      response = await handleEmailSettings(request, env, user);
     } else if (path.startsWith('/api/notifications')) {
       response = await handleNotifications(request, env, user);
     } else if (path.startsWith('/api/scanner')) {
