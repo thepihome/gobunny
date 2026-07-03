@@ -5,8 +5,19 @@
 import { query, queryOne, execute } from '../utils/db.js';
 import { addCorsHeaders } from '../utils/cors.js';
 import { authorize } from '../middleware/auth.js';
+import { notifyAdmins, queueTransactionalEmail } from '../utils/emailService.js';
 
-export async function handleTimesheets(request, env, user) {
+function timesheetEmailVars(row) {
+  return {
+    consultant_name: `${row.user_first_name || ''} ${row.user_last_name || ''}`.trim() || 'Consultant',
+    candidate_name: `${row.candidate_first_name || ''} ${row.candidate_last_name || ''}`.trim() || 'Candidate',
+    job_title: row.job_title || 'Assignment',
+    period_start: row.period_start || row.week_start || row.start_date || '',
+    period_end: row.period_end || row.week_end || row.end_date || '',
+  };
+}
+
+export async function handleTimesheets(request, env, user, ctx) {
   const url = new URL(request.url);
   const path = url.pathname;
   const method = request.method;
@@ -99,6 +110,24 @@ export async function handleTimesheets(request, env, user) {
         );
       }
 
+      if (user.role === 'consultant' && candidate_id) {
+        const assignment = await queryOne(
+          env,
+          'SELECT id FROM consultant_assignments WHERE consultant_id = ? AND candidate_id = ?',
+          [user.id, candidate_id]
+        );
+        if (!assignment) {
+          return addCorsHeaders(
+            new Response(
+              JSON.stringify({ error: 'Candidate not assigned to you' }),
+              { status: 403, headers: { 'Content-Type': 'application/json' } }
+            ),
+            env,
+            request
+          );
+        }
+      }
+
       // Insert timesheet
       const result = await execute(
         env,
@@ -141,6 +170,79 @@ export async function handleTimesheets(request, env, user) {
       );
     } catch (error) {
       console.error('Error creating timesheet:', error);
+      return addCorsHeaders(
+        new Response(
+          JSON.stringify({ error: 'Server error', details: error.message }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        ),
+        env,
+        request
+      );
+    }
+  }
+
+  // Get single timesheet
+  const timesheetDetailMatch = path.match(/^\/api\/timesheets\/(\d+)$/);
+  if (timesheetDetailMatch && method === 'GET') {
+    try {
+      const timesheetId = timesheetDetailMatch[1];
+      const timesheet = await queryOne(
+        env,
+        `SELECT t.*, 
+         u.first_name as user_first_name, u.last_name as user_last_name, u.email as user_email,
+         c.first_name as candidate_first_name, c.last_name as candidate_last_name, c.email as candidate_email,
+         j.title as job_title, j.company as job_company
+         FROM timesheets t
+         LEFT JOIN users u ON t.user_id = u.id
+         LEFT JOIN users c ON t.candidate_id = c.id
+         LEFT JOIN jobs j ON t.job_id = j.id
+         WHERE t.id = ?`,
+        [timesheetId]
+      );
+
+      if (!timesheet) {
+        return addCorsHeaders(
+          new Response(
+            JSON.stringify({ error: 'Timesheet not found' }),
+            { status: 404, headers: { 'Content-Type': 'application/json' } }
+          ),
+          env,
+          request
+        );
+      }
+
+      if (user.role === 'consultant' && timesheet.user_id !== user.id) {
+        return addCorsHeaders(
+          new Response(JSON.stringify({ error: 'Access denied' }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+          env,
+          request
+        );
+      }
+
+      if (user.role === 'candidate') {
+        return addCorsHeaders(
+          new Response(JSON.stringify({ error: 'Access denied' }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+          env,
+          request
+        );
+      }
+
+      return addCorsHeaders(
+        new Response(JSON.stringify(timesheet), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+        env,
+        request
+      );
+    } catch (error) {
+      console.error('Error fetching timesheet:', error);
       return addCorsHeaders(
         new Response(
           JSON.stringify({ error: 'Server error', details: error.message }),
@@ -374,6 +476,8 @@ export async function handleTimesheets(request, env, user) {
         [timesheetId]
       );
 
+      notifyAdmins(ctx, env, 'timesheet_submitted', timesheetEmailVars(updated));
+
       return addCorsHeaders(
         new Response(
           JSON.stringify(updated),
@@ -492,6 +596,17 @@ export async function handleTimesheets(request, env, user) {
          WHERE t.id = ?`,
         [timesheetId]
       );
+
+      const tsVars = timesheetEmailVars(updated);
+      if (updated?.user_email) {
+        queueTransactionalEmail(
+          ctx,
+          env,
+          newStatus === 'approved' ? 'timesheet_approved' : 'timesheet_rejected',
+          updated.user_email,
+          tsVars
+        );
+      }
 
       return addCorsHeaders(
         new Response(

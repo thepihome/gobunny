@@ -108,7 +108,7 @@ export async function handleRequest(request, env, ctx) {
     if (path.startsWith('/api/auth')) {
       console.log('Handling auth route:', path, method);
       try {
-        const response = await handleAuth(request, env);
+        const response = await handleAuth(request, env, ctx);
         if (response) {
           return addCorsHeaders(response, env, request);
         }
@@ -161,7 +161,7 @@ export async function handleRequest(request, env, ctx) {
     } else if (path.startsWith('/api/resumes')) {
       response = await handleResumes(request, env, user);
     } else if (path.startsWith('/api/matches')) {
-      response = await handleMatches(request, env, user);
+      response = await handleMatches(request, env, user, ctx);
     } else if (path.startsWith('/api/candidates')) {
       response = await handleCandidates(request, env, user);
     } else if (path.startsWith('/api/candidate-profiles')) {
@@ -169,13 +169,13 @@ export async function handleRequest(request, env, ctx) {
     } else if (path.startsWith('/api/register-candidates')) {
       response = await handleRegisterCandidates(request, env, user);
     } else if (path.startsWith('/api/timesheets')) {
-      response = await handleTimesheets(request, env, user);
+      response = await handleTimesheets(request, env, user, ctx);
     } else if (path.startsWith('/api/kpis')) {
       response = await handleKPIs(request, env, user);
     } else if (path.startsWith('/api/dashboard')) {
       response = await handleDashboard(request, env, user);
     } else if (path.startsWith('/api/users')) {
-      response = await handleUsers(request, env, user);
+      response = await handleUsers(request, env, user, ctx);
     } else if (path.startsWith('/api/groups')) {
       response = await handleGroups(request, env, user);
     } else if (path.startsWith('/api/permissions')) {

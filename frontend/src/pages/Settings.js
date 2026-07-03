@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { FiSettings, FiUser, FiDroplet, FiUsers, FiShield, FiSave, FiX, FiPlus, FiEdit, FiTrash2, FiMail, FiCalendar, FiEdit2, FiUserPlus, FiUserMinus, FiInfo, FiZap } from 'react-icons/fi';
 import AiMatchingSettings from '../components/AiMatchingSettings';
+import EmailSettings from '../components/EmailSettings';
 import LoadingButton from '../components/LoadingButton';
 import ThemeToggle from '../components/ThemeToggle';
 import './Settings.css';
@@ -103,6 +104,7 @@ const Settings = () => {
       { id: 'groups', label: 'Groups', icon: FiUsers, roles: ['admin'] },
       { id: 'permissions', label: 'Permissions', icon: FiShield, roles: ['admin'] },
       { id: 'ai-matching', label: 'AI matching', icon: FiZap, roles: ['admin'] },
+      { id: 'email', label: 'Email', icon: FiMail, roles: ['admin'] },
     ] : []),
   ];
 
@@ -278,6 +280,7 @@ const Settings = () => {
           {activeTab === 'permissions' && user?.role === 'admin' && <PermissionsManagement />}
 
           {activeTab === 'ai-matching' && user?.role === 'admin' && <AiMatchingSettings />}
+          {activeTab === 'email' && user?.role === 'admin' && <EmailSettings />}
         </div>
       </div>
     </div>

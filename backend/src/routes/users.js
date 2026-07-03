@@ -4,39 +4,44 @@
 
 import { query, queryOne, execute } from '../utils/db.js';
 import { addCorsHeaders } from '../utils/cors.js';
-import { authorize } from '../middleware/auth.js';
+import { authorize, isSelfOrAdmin } from '../middleware/auth.js';
+import { hashPassword } from '../utils/crypto.js';
+import { queueTransactionalEmail } from '../utils/emailService.js';
 
-/**
- * Hash password using Web Crypto API (PBKDF2) - same as auth.js
- */
-async function hashPassword(password) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+function sanitizeUser(row) {
+  if (!row) return row;
+  const { password_hash, ...safe } = row;
+  return safe;
 }
 
-export async function handleUsers(request, env, user) {
+function sanitizeUsers(rows) {
+  return (rows || []).map(sanitizeUser);
+}
+
+function forbiddenResponse(env, request, message = 'Insufficient permissions') {
+  return addCorsHeaders(
+    new Response(
+      JSON.stringify({ error: message }),
+      { status: 403, headers: { 'Content-Type': 'application/json' } }
+    ),
+    env,
+    request
+  );
+}
+
+export async function handleUsers(request, env, user, ctx) {
   const url = new URL(request.url);
   const path = url.pathname;
   const method = request.method;
 
-  // All user management endpoints require admin role
-  const authError = authorize('admin')(user);
-  if (authError) {
-    return addCorsHeaders(
-      new Response(
-        JSON.stringify({ error: authError.error }),
-        { status: authError.status, headers: { 'Content-Type': 'application/json' } }
-      ),
-      env,
-      request
-    );
-  }
+  const userDetailMatch = path.match(/^\/api\/users\/(\d+)$/);
+  const passwordMatch = path.match(/^\/api\/users\/(\d+)\/password$/);
+  const userActivityMatch = path.match(/^\/api\/users\/(\d+)\/activity$/);
 
-  // Get all users
+  // Get all users (admin only)
   if (path === '/api/users' && method === 'GET') {
+    const authError = authorize('admin')(user);
+    if (authError) return forbiddenResponse(env, request, authError.error);
     try {
       const users = await query(
         env,
@@ -48,7 +53,7 @@ export async function handleUsers(request, env, user) {
 
       return addCorsHeaders(
         new Response(
-          JSON.stringify(users || []),
+          JSON.stringify(sanitizeUsers(users)),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         ),
         env,
@@ -67,8 +72,10 @@ export async function handleUsers(request, env, user) {
     }
   }
 
-  // Create new user
+  // Create new user (admin only)
   if (path === '/api/users' && method === 'POST') {
+    const authError = authorize('admin')(user);
+    if (authError) return forbiddenResponse(env, request, authError.error);
     try {
       const body = await request.json();
       const { email, password, first_name, last_name, role, phone, is_active } = body;
@@ -159,12 +166,21 @@ export async function handleUsers(request, env, user) {
         [userId]
       );
 
-      // Remove password_hash from response
-      delete newUser.password_hash;
+      const emailVars = {
+        first_name: newUser.first_name,
+        last_name: newUser.last_name,
+        email: newUser.email,
+        role: newUser.role,
+      };
+      if (role === 'candidate') {
+        queueTransactionalEmail(ctx, env, 'candidate_onboarded', newUser.email, emailVars);
+      } else {
+        queueTransactionalEmail(ctx, env, 'user_created', newUser.email, emailVars);
+      }
 
       return addCorsHeaders(
         new Response(
-          JSON.stringify(newUser),
+          JSON.stringify(sanitizeUser(newUser)),
           { status: 201, headers: { 'Content-Type': 'application/json' } }
         ),
         env,
@@ -183,9 +199,10 @@ export async function handleUsers(request, env, user) {
     }
   }
 
-  // User activity timeline (activity logs + CRM)
-  const userActivityMatch = path.match(/^\/api\/users\/(\d+)\/activity$/);
+  // User activity timeline (admin only)
   if (userActivityMatch && method === 'GET') {
+    const authError = authorize('admin')(user);
+    if (authError) return forbiddenResponse(env, request, authError.error);
     try {
       const targetUserId = parseInt(userActivityMatch[1], 10);
       const { searchParams } = url;
@@ -395,11 +412,13 @@ export async function handleUsers(request, env, user) {
     }
   }
 
-  // Get single user with details
-  const userDetailMatch = path.match(/^\/api\/users\/(\d+)$/);
+  // Get single user (self or admin)
   if (userDetailMatch && method === 'GET') {
+    const userId = userDetailMatch[1];
+    if (!isSelfOrAdmin(user, userId)) {
+      return forbiddenResponse(env, request);
+    }
     try {
-      const userId = userDetailMatch[1];
 
       const userData = await queryOne(
         env,
@@ -431,14 +450,11 @@ export async function handleUsers(request, env, user) {
         [userId]
       );
 
-      // Remove password_hash
-      delete userData.password_hash;
-
       return addCorsHeaders(
         new Response(
           JSON.stringify({
-            ...userData,
-            groups: groups || []
+            ...sanitizeUser(userData),
+            groups: groups || [],
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         ),
@@ -458,12 +474,21 @@ export async function handleUsers(request, env, user) {
     }
   }
 
-  // Update user
+  // Update user (self or admin; only admin may change role/is_active)
   if (userDetailMatch && method === 'PUT') {
     try {
       const userId = userDetailMatch[1];
+      if (!isSelfOrAdmin(user, userId)) {
+        return forbiddenResponse(env, request);
+      }
+
       const body = await request.json();
-      const { email, first_name, last_name, role, phone, is_active } = body;
+      let { email, first_name, last_name, role, phone, is_active } = body;
+
+      if (user.role !== 'admin') {
+        role = undefined;
+        is_active = undefined;
+      }
 
       // Check if user exists
       const existing = await queryOne(
@@ -574,11 +599,9 @@ export async function handleUsers(request, env, user) {
         [userId]
       );
 
-      delete updated.password_hash;
-
       return addCorsHeaders(
         new Response(
-          JSON.stringify(updated),
+          JSON.stringify(sanitizeUser(updated)),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         ),
         env,
@@ -597,11 +620,14 @@ export async function handleUsers(request, env, user) {
     }
   }
 
-  // Update user password
-  const passwordMatch = path.match(/^\/api\/users\/(\d+)\/password$/);
+  // Update user password (self or admin)
   if (passwordMatch && method === 'PUT') {
     try {
       const userId = passwordMatch[1];
+      if (!isSelfOrAdmin(user, userId)) {
+        return forbiddenResponse(env, request);
+      }
+
       const body = await request.json();
       const { password } = body;
 
@@ -664,8 +690,11 @@ export async function handleUsers(request, env, user) {
     }
   }
 
-  // Delete user
+  // Delete user (admin only)
   if (userDetailMatch && method === 'DELETE') {
+    const authError = authorize('admin')(user);
+    if (authError) return forbiddenResponse(env, request, authError.error);
+
     try {
       const userId = userDetailMatch[1];
 

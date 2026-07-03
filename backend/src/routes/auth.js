@@ -4,46 +4,15 @@
 
 import { queryOne, execute } from '../utils/db.js';
 import { addCorsHeaders } from '../utils/cors.js';
+import {
+  hashPassword,
+  comparePassword,
+  createJWT,
+  needsPasswordRehash,
+} from '../utils/crypto.js';
+import { queueTransactionalEmail } from '../utils/emailService.js';
 
-/**
- * Hash password using Web Crypto API (PBKDF2)
- */
-async function hashPassword(password) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-/**
- * Compare password with hash
- */
-async function comparePassword(password, hash) {
-  const passwordHash = await hashPassword(password);
-  return passwordHash === hash;
-}
-
-/**
- * Simple JWT creation
- * Note: This is a simplified implementation. For production, use a proper JWT library
- * or implement proper HMAC-SHA256 signing with Web Crypto API
- */
-function createJWT(payload, secret, expiresIn = '7d') {
-  const header = { alg: 'HS256', typ: 'JWT' };
-  const now = Math.floor(Date.now() / 1000);
-  const exp = now + (expiresIn === '7d' ? 7 * 24 * 60 * 60 : 60 * 60);
-  
-  const encodedHeader = btoa(JSON.stringify(header)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-  const encodedPayload = btoa(JSON.stringify({ ...payload, exp, iat: now })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-  
-  // Simplified: In production, implement proper HMAC-SHA256 signature
-  // For now, we'll use a simple approach (not secure for production)
-  const signature = btoa(secret).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-  return `${encodedHeader}.${encodedPayload}.${signature}`;
-}
-
-export async function handleAuth(request, env) {
+export async function handleAuth(request, env, ctx) {
   const url = new URL(request.url);
   const path = url.pathname;
   const method = request.method;
@@ -141,11 +110,17 @@ export async function handleAuth(request, env) {
       }
 
       // Generate token
-      const token = createJWT(
+      const token = await createJWT(
         { userId: user.id },
         env.JWT_SECRET,
         env.JWT_EXPIRE || '7d'
       );
+
+      queueTransactionalEmail(ctx, env, 'user_signup', user.email, {
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+      });
 
       return addCorsHeaders(
         new Response(
@@ -282,7 +257,7 @@ export async function handleAuth(request, env) {
           request
         );
       }
-      const token = createJWT(
+      const token = await createJWT(
         { userId: user.id },
         env.JWT_SECRET,
         env.JWT_EXPIRE || '7d'
@@ -365,8 +340,17 @@ export async function handleAuth(request, env) {
         );
       }
 
+      if (needsPasswordRehash(user.password_hash)) {
+        const newHash = await hashPassword(password);
+        await execute(
+          env,
+          `UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?`,
+          [newHash, user.id]
+        );
+      }
+
       // Generate token
-      const token = createJWT(
+      const token = await createJWT(
         { userId: user.id },
         env.JWT_SECRET,
         env.JWT_EXPIRE || '7d'
