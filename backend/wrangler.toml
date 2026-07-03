@@ -48,6 +48,9 @@ bucket_name = "resume-uploads"
 name = "gobunnyy-backend-dev"
 main = "worker.js"
 
+[env.dev.vars]
+SCANNER_SERVICE_URL = "http://localhost:8790"
+
 [[env.dev.d1_databases]]
 binding = "DB"
 database_name = "godashdevcore01"

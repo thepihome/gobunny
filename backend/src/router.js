@@ -20,6 +20,7 @@ import { handleJobRoles } from './routes/jobRoles.js';
 import { handleAiSettings } from './routes/aiSettings.js';
 import { handleNotifications } from './routes/notifications.js';
 import { handleDashboard } from './routes/dashboard.js';
+import { handleScanner, handleScannerInternal } from './routes/scanner.js';
 import { authenticate } from './middleware/auth.js';
 import { getCorsHeaders, handleCORS, addCorsHeaders } from './utils/cors.js';
 
@@ -100,6 +101,12 @@ export async function handleRequest(request, env, ctx) {
         }
       );
     }
+  }
+
+  // Scanner internal API (service-to-service, no JWT)
+  if (path.startsWith('/api/scanner/internal/')) {
+    const response = await handleScannerInternal(request, env);
+    return addCorsHeaders(response, env, request);
   }
 
   // Route handlers
@@ -190,6 +197,8 @@ export async function handleRequest(request, env, ctx) {
       response = await handleAiSettings(request, env, user);
     } else if (path.startsWith('/api/notifications')) {
       response = await handleNotifications(request, env, user);
+    } else if (path.startsWith('/api/scanner')) {
+      response = await handleScanner(request, env, user);
     } else {
       response = new Response(
         JSON.stringify({ error: 'Not found' }),
