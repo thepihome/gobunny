@@ -1,32 +1,8 @@
 /**
  * Authentication middleware for Cloudflare Workers
- * Using Web Crypto API for JWT verification
  */
 
-/**
- * Base64 URL decode
- */
-function base64UrlDecode(str) {
-  str = str.replace(/-/g, '+').replace(/_/g, '/');
-  while (str.length % 4) {
-    str += '=';
-  }
-  return atob(str);
-}
-
-/**
- * Decode JWT without verification (for getting payload)
- */
-function decodeJWT(token) {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    const payload = JSON.parse(base64UrlDecode(parts[1]));
-    return payload;
-  } catch (e) {
-    return null;
-  }
-}
+import { verifyJWT } from '../utils/crypto.js';
 
 /**
  * Authenticate request using JWT token
@@ -39,21 +15,19 @@ export async function authenticate(request, env) {
     }
 
     const token = authHeader.substring(7);
-    
-    // Decode token to get user ID (simplified - in production, verify signature)
-    const decoded = decodeJWT(token);
+    const secret = env.JWT_SECRET;
+    if (!secret) {
+      console.error('JWT_SECRET not configured');
+      return { error: 'Server configuration error', status: 500 };
+    }
+
+    const decoded = await verifyJWT(token, secret);
     if (!decoded || !decoded.userId) {
       return { error: 'Invalid token', status: 401 };
     }
 
-    // Check expiration
-    if (decoded.exp && decoded.exp < Date.now() / 1000) {
-      return { error: 'Token expired', status: 401 };
-    }
-
     const userId = decoded.userId;
 
-    // Get user from database
     const { queryOne } = await import('../utils/db.js');
     const user = await queryOne(
       env,
@@ -89,3 +63,9 @@ export function authorize(...allowedRoles) {
   };
 }
 
+/**
+ * Returns true when the user may access their own record or is admin
+ */
+export function isSelfOrAdmin(user, targetUserId) {
+  return user.role === 'admin' || user.id === parseInt(targetUserId, 10);
+}

@@ -7,6 +7,9 @@ import { parseQueryConfig } from '../utils/kpiConfig';
 import DashboardCharts from '../components/DashboardCharts';
 import DashboardQuickActions from '../components/DashboardQuickActions';
 import LoadingButton, { iconSpinClass } from '../components/LoadingButton';
+import IconButton from '../components/IconButton';
+import Modal from '../components/Modal';
+import { StaggerGrid, StaggerItem, AnimatedPanel, FadeIn } from '../components/motion';
 import {
   FiPlus,
   FiEdit,
@@ -39,13 +42,13 @@ function buildKpiNavigateUrl(config) {
   if (!config || config.type !== 'candidate_filter') return null;
   const params = new URLSearchParams();
   if (config.conditions?.length) {
-    params.set('query', encodeURIComponent(JSON.stringify(config.conditions)));
+    params.set('query', JSON.stringify(config.conditions));
   } else if (config.filters) {
     const conditions = Object.entries(config.filters)
       .filter(([, value]) => value)
       .map(([field, value]) => ({ field, value: String(value), operator: 'like' }));
     if (conditions.length) {
-      params.set('query', encodeURIComponent(JSON.stringify(conditions)));
+      params.set('query', JSON.stringify(conditions));
     }
   }
   return params.toString() ? `/candidates?${params.toString()}` : null;
@@ -66,17 +69,18 @@ const Dashboard = () => {
     display_order: 0,
   });
 
-  const { data: kpis, isLoading: kpisLoading, error: kpisError } = useQuery(
+  const { data: kpis, isLoading: kpisLoading, error: kpisError, refetch: refetchKpis } = useQuery(
     'kpis',
     () => api.get('/kpis/my-kpis').then((res) => res.data),
     { staleTime: 60_000 }
   );
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const {
     data: analytics,
     isLoading: analyticsLoading,
     refetch: refetchAnalytics,
-    isFetching: analyticsFetching,
   } = useQuery(
     'dashboard-analytics',
     () => api.get('/dashboard/analytics').then((res) => res.data),
@@ -168,6 +172,16 @@ const Dashboard = () => {
     if (url) navigate(url);
   };
 
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await Promise.all([refetchAnalytics(), refetchKpis()]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const isLoading = kpisLoading && analyticsLoading;
 
   if (isLoading) {
@@ -180,31 +194,29 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard list-page">
-      <header className="dashboard-header">
+      <header className="dashboard-header layer-banner">
         <div className="dashboard-header-text">
-          <span className="page-eyebrow">Dashboard</span>
-          <h1>Welcome back, {user?.first_name}</h1>
-          <p className="dashboard-subtitle">
-            {user?.role === 'admin' && 'Organization overview, KPIs, and business intelligence'}
-            {user?.role === 'consultant' && 'Pipeline metrics, timesheets, and candidate insights'}
-            {user?.role === 'candidate' && 'Track matches, applications, and career progress'}
-          </p>
+          <FadeIn delay={1}>
+            <h1>Welcome back, {user?.first_name}</h1>
+          </FadeIn>
         </div>
-        <div className="dashboard-header-actions">
-          <LoadingButton
-            className="btn btn-secondary"
+        <FadeIn delay={2} className="dashboard-header-actions page-toolbar">
+          <IconButton
             icon={FiRefreshCw}
-            loading={analyticsFetching}
-            onClick={() => refetchAnalytics()}
-          >
-            Refresh
-          </LoadingButton>
-          <button type="button" className="btn btn-primary" onClick={handleCreateKpi}>
-            <FiPlus /> Add KPI
-          </button>
-        </div>
+            label="Refresh dashboard"
+            onClick={handleRefresh}
+            loading={isRefreshing}
+          />
+          <IconButton
+            icon={FiPlus}
+            label="Add KPI"
+            variant="primary"
+            onClick={handleCreateKpi}
+          />
+        </FadeIn>
       </header>
 
+      <div className="page-content-layer">
       <nav className="dashboard-tabs" aria-label="Dashboard sections">
         {TABS.map((tab) => {
           const Icon = tab.icon;
@@ -224,51 +236,52 @@ const Dashboard = () => {
       {activeTab === 'overview' && (
         <div className="dashboard-section">
           {summaryEntries.length > 0 && (
-            <div className="summary-strip">
+            <StaggerGrid className="summary-strip">
               {summaryEntries.map(([key, value]) => (
-                <div key={key} className="summary-chip">
+                <StaggerItem key={key} className="summary-chip">
                   <span className="summary-chip-value">{value}</span>
                   <span className="summary-chip-label">{SUMMARY_LABELS[key] || key}</span>
-                </div>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerGrid>
           )}
 
-          <section className="dashboard-panel">
+          <AnimatedPanel className="dashboard-panel">
             <h2>Quick Actions</h2>
             <DashboardQuickActions role={user?.role} />
-          </section>
+          </AnimatedPanel>
 
-          <section className="dashboard-panel">
+          <AnimatedPanel className="dashboard-panel">
             <div className="dashboard-panel-head">
               <h2>Key Metrics</h2>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => setActiveTab('kpis')}>
-                Manage KPIs
-              </button>
+              <IconButton icon={FiTrendingUp} label="Manage KPIs" size="sm" onClick={() => setActiveTab('kpis')} />
             </div>
             {kpisError ? (
               <div className="error">Failed to load KPIs. Try refreshing.</div>
             ) : (
-              <div className="kpi-grid kpi-grid--compact">
+              <StaggerGrid className="kpi-grid kpi-grid--compact">
                 {kpis?.length ? (
                   kpis.slice(0, 4).map((kpi) => {
                     const config = parseQueryConfig(kpi.query_config);
                     const isClickable = kpi.metric_type === 'custom_filter' && buildKpiNavigateUrl(config);
                     return (
-                      <div
+                      <StaggerItem
                         key={kpi.id}
                         className={`kpi-card ${isClickable ? 'kpi-clickable' : ''}`}
-                        onClick={isClickable ? () => handleKpiClick(kpi) : undefined}
-                        onKeyDown={isClickable ? (e) => e.key === 'Enter' && handleKpiClick(kpi) : undefined}
-                        role={isClickable ? 'button' : undefined}
-                        tabIndex={isClickable ? 0 : undefined}
                       >
-                        <div className="kpi-header">
-                          <h3>{kpi.name}</h3>
+                        <div
+                          onClick={isClickable ? () => handleKpiClick(kpi) : undefined}
+                          onKeyDown={isClickable ? (e) => e.key === 'Enter' && handleKpiClick(kpi) : undefined}
+                          role={isClickable ? 'button' : undefined}
+                          tabIndex={isClickable ? 0 : undefined}
+                        >
+                          <div className="kpi-header">
+                            <h3>{kpi.name}</h3>
+                          </div>
+                          <div className="kpi-value">{kpi.current_value ?? '—'}</div>
+                          {kpi.description && <p className="kpi-description">{kpi.description}</p>}
                         </div>
-                        <div className="kpi-value">{kpi.current_value ?? '—'}</div>
-                        {kpi.description && <p className="kpi-description">{kpi.description}</p>}
-                      </div>
+                      </StaggerItem>
                     );
                   })
                 ) : (
@@ -276,11 +289,11 @@ const Dashboard = () => {
                     <p>No KPIs yet. Add one to track what matters to you.</p>
                   </div>
                 )}
-              </div>
+              </StaggerGrid>
             )}
-          </section>
+          </AnimatedPanel>
 
-          <section className="dashboard-panel">
+          <AnimatedPanel className="dashboard-panel">
             <div className="dashboard-panel-head">
               <h2>Analytics Preview</h2>
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => setActiveTab('analytics')}>
@@ -291,7 +304,7 @@ const Dashboard = () => {
               charts={analytics?.charts?.slice(0, 2)}
               isLoading={analyticsLoading}
             />
-          </section>
+          </AnimatedPanel>
         </div>
       )}
 
@@ -345,18 +358,18 @@ const Dashboard = () => {
 
       {activeTab === 'analytics' && (
         <div className="dashboard-section">
-          <p className="dashboard-section-desc">
-            Interactive business intelligence charts based on your role and live platform data.
-          </p>
           <DashboardCharts charts={analytics?.charts} isLoading={analyticsLoading} />
         </div>
       )}
+      </div>
 
-      {showKpiModal && (
-        <div className="modal-overlay" onClick={() => setShowKpiModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>{editingKpi ? 'Edit KPI' : 'Create KPI'}</h2>
-            <form onSubmit={handleSubmitKpi}>
+      <Modal
+        open={showKpiModal}
+        onClose={() => setShowKpiModal(false)}
+        ariaLabel={editingKpi ? 'Edit KPI' : 'Create KPI'}
+      >
+        <h2>{editingKpi ? 'Edit KPI' : 'Create KPI'}</h2>
+        <form onSubmit={handleSubmitKpi}>
               {kpiError && <div className="error">{kpiError}</div>}
               <div className="form-group">
                 <label>Name</label>
@@ -427,9 +440,7 @@ const Dashboard = () => {
                 </LoadingButton>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 };

@@ -4,6 +4,21 @@
 main = "worker.js"
 compatibility_date = "2024-01-01"
 
+# Default local dev bindings (wrangler dev without --env)
+[[d1_databases]]
+binding = "DB"
+database_name = "godashdevcore01"
+database_id = "12817295-68e1-4f7e-9cd8-35fa76ea4820"
+
+[[d1_databases]]
+binding = "REGISTER_DB"
+database_name = "gowebdevcore"
+database_id = "dffbbf99-6000-4678-a042-4dba94635548"
+
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "resume-uploads-dev"
+
 # ---------------------------------------------------------------------------
 # Production — main branch frontend (Cloudflare Pages "Production" env)
 # Secrets: wrangler secret put GOOGLE_CLIENT_ID --env production

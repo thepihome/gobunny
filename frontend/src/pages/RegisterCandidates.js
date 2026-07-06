@@ -1,7 +1,10 @@
 import React, { useMemo, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import api from '../config/api';
+import { useAuth } from '../context/AuthContext';
 import { FiArrowUp, FiArrowDown, FiSearch, FiFilter, FiX } from 'react-icons/fi';
+import IconButton from '../components/IconButton';
 import './Candidates.css';
 
 const COLUMN_CONFIG = [
@@ -17,26 +20,18 @@ const COLUMN_CONFIG = [
 ];
 
 const RegisterCandidates = () => {
-  const { data: rows = [], isLoading, isError, error } = useQuery(
-    ['register-candidates'],
-    () => api.get('/register-candidates').then(res => res.data),
-    { refetchOnWindowFocus: false, staleTime: 30000 }
-  );
+  const { user, loading } = useAuth();
 
   const [sortColumn, setSortColumn] = useState('created_at');
   const [sortDirection, setSortDirection] = useState('desc');
   const [search, setSearch] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
-  const handleSort = (columnKey) => {
-    if (!COLUMN_CONFIG.find(c => c.key === columnKey)?.sortable) return;
-    if (sortColumn === columnKey) {
-      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortColumn(columnKey);
-      setSortDirection('asc');
-    }
-  };
+  const { data: rows = [], isLoading, isError, error } = useQuery(
+    ['register-candidates'],
+    () => api.get('/register-candidates').then(res => res.data),
+    { refetchOnWindowFocus: false, staleTime: 30000, enabled: user?.role === 'admin' }
+  );
 
   const filteredAndSorted = useMemo(() => {
     if (!rows || rows.length === 0) return [];
@@ -95,6 +90,24 @@ const RegisterCandidates = () => {
     return sorted;
   }, [rows, search, sortColumn, sortDirection]);
 
+  const handleSort = (columnKey) => {
+    if (!COLUMN_CONFIG.find(c => c.key === columnKey)?.sortable) return;
+    if (sortColumn === columnKey) {
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortColumn(columnKey);
+      setSortDirection('asc');
+    }
+  };
+
+  if (loading) {
+    return <div className="loading">Loading...</div>;
+  }
+
+  if (user?.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+
   if (isLoading) {
     return <div className="loading">Loading register candidates...</div>;
   }
@@ -113,14 +126,13 @@ const RegisterCandidates = () => {
     <div className="candidates-page list-page">
       <div className="page-header">
         <h1>Register</h1>
-        <div className="list-page-header-actions">
-          <button
-            type="button"
-            className="btn btn-secondary"
+        <div className="list-page-header-actions page-toolbar">
+          <IconButton
+            icon={FiFilter}
+            label={showFilters ? 'Hide filters' : 'Show filters'}
+            active={showFilters}
             onClick={() => setShowFilters(!showFilters)}
-          >
-            <FiFilter /> {showFilters ? 'Hide' : 'Show'} filters
-          </button>
+          />
         </div>
       </div>
 

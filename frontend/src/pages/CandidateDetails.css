@@ -1,10 +1,88 @@
 .candidate-details {
-  max-width: 1000px;
-  margin: 0 auto;
+  width: 100%;
+}
+
+.candidate-details.list-page {
+  max-width: 1200px;
+}
+
+.candidate-details-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.candidate-details-card {
+  background: var(--surface-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  margin-bottom: var(--space-4);
+}
+
+.candidate-details-hero {
+  margin-top: 0;
+}
+
+.candidate-details-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.85rem 1.25rem;
+}
+
+.candidate-details-header h1 {
+  margin: 0 0 0.5rem;
+  color: var(--text-heading);
+  font-size: clamp(1.35rem, 2.5vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.candidate-details-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1.25rem;
+  color: var(--text-secondary-color);
+  font-size: var(--text-sm);
+}
+
+.candidate-details-contact-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.candidate-details-actions {
+  margin-left: auto;
+}
+
+.candidate-assignment-panel {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+}
+
+.candidate-assignment-label {
+  margin: 0 0 0.5rem;
+  color: var(--text-secondary-color);
+  font-size: var(--text-sm);
+}
+
+.candidate-assignment-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
 }
 
 .candidate-info {
-  background: white;
+  background: var(--glass-bg-strong);
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
@@ -16,8 +94,17 @@
   color: var(--text-secondary-color);
 }
 
+.candidate-section.candidate-details-card {
+  background: var(--surface-color);
+  border-radius: var(--radius-lg);
+  padding: clamp(1.15rem, 2.5vw, 1.75rem);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  margin-bottom: 1rem;
+}
+
 .candidate-section {
-  background: white;
+  background: var(--glass-bg-strong);
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
@@ -25,9 +112,10 @@
 }
 
 .candidate-section h2 {
-  color: #333;
+  color: var(--text-heading);
   margin-bottom: 15px;
-  font-size: 20px;
+  font-size: 1.125rem;
+  font-weight: 700;
 }
 
 .resumes-list,
@@ -41,7 +129,7 @@
 .match-item,
 .crm-item {
   padding: 15px;
-  background: #f8f9fa;
+  background: var(--glass-bg-muted);
   border-radius: 4px;
 }
 
@@ -71,13 +159,13 @@
   margin: 0;
   padding: 1rem;
   color: var(--text-secondary-color);
-  background: #f8f9fa;
+  background: var(--glass-bg-muted);
   border-radius: 4px;
 }
 
 .profile-item {
   padding: 10px;
-  background: #f8f9fa;
+  background: var(--glass-bg-muted);
   border-radius: 4px;
 }
 
@@ -581,6 +669,16 @@
 
 .candidate-section-crm-header h2 {
   margin-bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.candidate-crm-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .candidate-crm-dashboard-link {
@@ -590,28 +688,71 @@
   font-size: 0.875rem;
 }
 
-.candidate-crm-hint {
-  font-size: 0.875rem;
-  color: var(--text-secondary-color);
-  margin: 0 0 1rem;
-  line-height: 1.45;
+.candidate-crm-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--border-color) 28%, var(--surface-color));
+  border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
 }
 
-.candidate-crm-hint a {
+.candidate-crm-summary__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 5.5rem;
+}
+
+.candidate-crm-summary__stat--warn strong {
+  color: #b45309;
+}
+
+.candidate-crm-summary__label {
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: var(--primary-color, #2563eb);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary-color);
 }
 
-.candidate-crm-mini-grid {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+.candidate-crm-summary__stat strong {
+  font-size: 1rem;
+  color: var(--text-heading);
 }
 
-.candidate-crm-mini-grid .crm-card__notes {
-  margin-bottom: 0.65rem;
+.candidate-crm-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
 }
 
 .candidate-crm-empty {
   margin: 0;
   color: var(--text-secondary-color);
+}
+
+.candidate-section-crm .crm-timeline {
+  margin-top: 0.25rem;
+}
+
+.crm-timeline-item--overdue .crm-timeline-marker {
+  border-color: color-mix(in srgb, #b45309 55%, var(--border-color));
+  color: #b45309;
+}
+
+.crm-timeline-follow {
+  margin: 0.5rem 0 0;
+}
+
+.crm-timeline-who-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  margin-right: 0.25rem;
+  vertical-align: -0.125em;
+  opacity: 0.7;
 }
 

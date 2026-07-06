@@ -174,9 +174,203 @@
   margin-bottom: 0.45rem;
 }
 
+.job-details-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .external-link-hint {
   color: var(--text-secondary-color);
   font-size: 0.8125rem;
   margin-top: 0.35rem;
   font-style: italic;
+}
+
+.job-suggested-candidates {
+  margin-top: 1rem;
+}
+
+.job-suggested-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.job-suggested-header h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.35rem;
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.job-suggested-subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary-color);
+  line-height: 1.45;
+}
+
+.job-suggested-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.job-suggested-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 0.85rem 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--border-color) 75%, transparent);
+  background: color-mix(in srgb, var(--surface-color) 55%, transparent);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.job-suggested-item:hover {
+  border-color: color-mix(in srgb, var(--primary-color) 28%, var(--border-color));
+  box-shadow: var(--shadow-sm);
+}
+
+.job-suggested-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding: 0 0.45rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text-secondary-color);
+  background: color-mix(in srgb, var(--border-color) 35%, transparent);
+}
+
+.job-suggested-rank--1 {
+  color: #92400e;
+  background: color-mix(in srgb, #f59e0b 18%, transparent);
+}
+
+.job-suggested-rank--2 {
+  color: #475569;
+  background: color-mix(in srgb, #94a3b8 22%, transparent);
+}
+
+.job-suggested-rank--3 {
+  color: #9a3412;
+  background: color-mix(in srgb, #fb923c 18%, transparent);
+}
+
+.job-suggested-body {
+  min-width: 0;
+}
+
+.job-suggested-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.job-suggested-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.job-suggested-icon {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  color: var(--primary-color);
+  opacity: 0.85;
+}
+
+.job-suggested-identity strong {
+  display: block;
+  color: var(--text-heading);
+  font-size: 0.9375rem;
+}
+
+.job-suggested-email {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--text-secondary-color);
+  word-break: break-word;
+}
+
+.job-suggested-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary-color);
+}
+
+.job-suggested-classification {
+  color: var(--text-muted);
+}
+
+.job-suggested-status {
+  text-transform: capitalize;
+}
+
+.job-suggested-notes {
+  margin: 0.45rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-color);
+  opacity: 0.9;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.job-suggested-profile-btn {
+  align-self: center;
+  white-space: nowrap;
+}
+
+.job-suggested-empty,
+.job-suggested-empty-state {
+  margin: 0;
+  padding: 1rem;
+  text-align: center;
+  color: var(--text-secondary-color);
+  font-size: 0.875rem;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--border-color) 22%, transparent);
+}
+
+.job-suggested-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .job-suggested-item {
+    grid-template-columns: auto 1fr;
+  }
+
+  .job-suggested-profile-btn {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    text-align: center;
+  }
 }

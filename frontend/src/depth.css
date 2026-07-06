@@ -1,0 +1,161 @@
+/**
+ * Layered depth (3/10 intensity): navbar & banners forward, page content recessed.
+ * Loaded after glass.css.
+ */
+
+:root {
+  --depth-intensity: 0.3;
+  --banner-inset-x: clamp(1rem, 3vw, 1.75rem);
+
+  --depth-recess-offset: calc(var(--depth-intensity) * 10px);
+
+  --depth-nav-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.65) inset,
+    0 2px 6px rgba(15, 23, 42, calc(var(--depth-intensity) * 0.07)),
+    0 8px 28px rgba(15, 23, 42, calc(var(--depth-intensity) * 0.11)),
+    0 20px 50px rgba(15, 23, 42, calc(var(--depth-intensity) * 0.06));
+
+  --depth-sidebar-shadow:
+    2px 0 8px rgba(15, 23, 42, calc(var(--depth-intensity) * 0.05)),
+    8px 0 32px rgba(15, 23, 42, calc(var(--depth-intensity) * 0.09));
+
+  --depth-banner-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 4px 14px rgba(15, 23, 42, calc(var(--depth-intensity) * 0.08)),
+    0 12px 36px rgba(15, 23, 42, calc(var(--depth-intensity) * 0.06));
+
+  --depth-panel-shadow:
+    0 2px 8px rgba(15, 23, 42, calc(var(--depth-intensity) * 0.05)),
+    0 6px 20px rgba(15, 23, 42, calc(var(--depth-intensity) * 0.04));
+}
+
+[data-theme='dark'] {
+  --depth-nav-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 4px 16px rgba(0, 0, 0, calc(var(--depth-intensity) * 0.35)),
+    0 16px 48px rgba(0, 0, 0, calc(var(--depth-intensity) * 0.25));
+
+  --depth-sidebar-shadow:
+    2px 0 12px rgba(0, 0, 0, calc(var(--depth-intensity) * 0.3)),
+    8px 0 28px rgba(0, 0, 0, calc(var(--depth-intensity) * 0.2));
+
+  --depth-banner-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 6px 20px rgba(0, 0, 0, calc(var(--depth-intensity) * 0.28)),
+    0 14px 40px rgba(0, 0, 0, calc(var(--depth-intensity) * 0.18));
+}
+
+.layout {
+  isolation: isolate;
+}
+
+/* ── Front layers ── */
+.navbar.layer-front {
+  z-index: 1000;
+  box-shadow: var(--depth-nav-shadow) !important;
+}
+
+.sidebar.layer-mid {
+  z-index: 900;
+  box-shadow: var(--depth-sidebar-shadow) !important;
+}
+
+/* ── Recessed page canvas ── */
+.main-content.layer-recess {
+  position: relative;
+  z-index: 1;
+}
+
+.page-stage {
+  transform-origin: top center;
+  padding-top: var(--depth-recess-offset);
+  min-height: calc(100vh - var(--navbar-height) - var(--depth-recess-offset));
+}
+
+.page-transition {
+  will-change: transform, opacity;
+}
+
+/* ── Banner layer (page headers) ── */
+.layer-banner,
+.list-page > .page-header,
+.list-page > .dashboard-header,
+.dashboard-header {
+  position: relative;
+  z-index: 8;
+  width: calc(100% - 2 * var(--banner-inset-x));
+  max-width: calc(100% - 2 * var(--banner-inset-x));
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: var(--space-5);
+  box-shadow: var(--depth-banner-shadow), var(--glass-highlight);
+}
+
+.page-content-layer {
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Elevated panels (cards sit above recessed base) ── */
+.card,
+.kpi-card,
+.chart-card,
+.dashboard-panel,
+.summary-chip,
+.quick-action-card,
+.list-filters-panel,
+.crm-stat-card {
+  box-shadow: var(--depth-panel-shadow), var(--glass-shadow), var(--glass-highlight) !important;
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s ease,
+    border-color 0.2s ease;
+}
+
+.card:hover,
+.kpi-card:hover,
+.chart-card:hover,
+.summary-chip:hover,
+.quick-action-card:hover,
+.crm-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 24px rgba(15, 23, 42, 0.08),
+    var(--depth-panel-shadow),
+    var(--glass-highlight) !important;
+}
+
+.kpi-clickable:hover {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-stage {
+    transform: none !important;
+    padding-top: 0 !important;
+  }
+
+  .card:hover,
+  .kpi-card:hover,
+  .chart-card:hover,
+  .summary-chip:hover,
+  .quick-action-card:hover {
+    transform: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-stage {
+    transform: none;
+    padding-top: var(--space-2);
+  }
+
+  .layer-banner,
+  .list-page > .page-header,
+  .list-page > .dashboard-header,
+  .dashboard-header {
+    width: calc(100% - 2 * var(--space-3));
+    max-width: calc(100% - 2 * var(--space-3));
+    margin-bottom: var(--space-4);
+  }
+}

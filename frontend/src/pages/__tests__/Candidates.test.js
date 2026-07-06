@@ -47,8 +47,15 @@ describe('Candidates Filter Functionality', () => {
     api.get.mockResolvedValue({ data: [] });
   });
 
-  test('should render filter panel when show filters is clicked', () => {
+  const waitForCandidatesLoaded = async () => {
+    await waitFor(() => {
+      expect(screen.queryByText(/loading candidates/i)).not.toBeInTheDocument();
+    });
+  };
+
+  test('should render filter panel when show filters is clicked', async () => {
     renderWithProviders(<Candidates />);
+    await waitForCandidatesLoaded();
 
     const showFiltersButton = screen.getByRole('button', { name: /show filters/i });
     fireEvent.click(showFiltersButton);
@@ -57,8 +64,9 @@ describe('Candidates Filter Functionality', () => {
     expect(screen.getByText(/add filter/i)).toBeInTheDocument();
   });
 
-  test('should add a new filter condition', () => {
+  test('should add a new filter condition', async () => {
     renderWithProviders(<Candidates />);
+    await waitForCandidatesLoaded();
 
     const showFiltersButton = screen.getByRole('button', { name: /show filters/i });
     fireEvent.click(showFiltersButton);
@@ -69,8 +77,9 @@ describe('Candidates Filter Functionality', () => {
     expect(screen.getByText(/select field/i)).toBeInTheDocument();
   });
 
-  test('should remove a filter condition', () => {
+  test('should remove a filter condition', async () => {
     renderWithProviders(<Candidates />);
+    await waitForCandidatesLoaded();
 
     const showFiltersButton = screen.getByRole('button', { name: /show filters/i });
     fireEvent.click(showFiltersButton);
@@ -87,8 +96,9 @@ describe('Candidates Filter Functionality', () => {
     expect(screen.queryByText(/select field/i)).not.toBeInTheDocument();
   });
 
-  test('should clear all filters', () => {
+  test('should clear all filters', async () => {
     renderWithProviders(<Candidates />);
+    await waitForCandidatesLoaded();
 
     const showFiltersButton = screen.getByRole('button', { name: /show filters/i });
     fireEvent.click(showFiltersButton);
@@ -104,6 +114,7 @@ describe('Candidates Filter Functionality', () => {
 
   test('should parse query syntax correctly', async () => {
     renderWithProviders(<Candidates />);
+    await waitForCandidatesLoaded();
 
     const showFiltersButton = screen.getByRole('button', { name: /show filters/i });
     fireEvent.click(showFiltersButton);

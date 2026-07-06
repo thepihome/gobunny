@@ -1,35 +1,42 @@
 .settings-page {
-  max-width: 1400px;
+  max-width: var(--container-xl);
   margin: 0 auto;
+  width: 100%;
 }
 
 .settings-header {
-  margin-bottom: 30px;
+  margin-bottom: var(--space-6);
 }
 
 .settings-header h1 {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.65rem;
   color: var(--text-heading);
   margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: 700;
 }
 
 .settings-container {
   display: flex;
-  gap: var(--space-8);
-  background: var(--surface-color);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-color);
+  gap: 0;
+  min-height: 32rem;
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur-sm)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm)) saturate(var(--glass-saturate));
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--glass-border-outer);
   overflow: hidden;
 }
 
 .settings-sidebar {
-  width: 250px;
-  background: var(--surface-muted);
+  width: 15.625rem;
+  flex-shrink: 0;
+  background: var(--glass-bg-muted);
   border-right: 1px solid var(--border-color);
-  padding: 20px 0;
+  padding: 1rem 0;
 }
 
 .settings-tab {
@@ -65,11 +72,28 @@
 
 .settings-content {
   flex: 1;
-  padding: 30px;
+  min-width: 0;
+  padding: var(--space-8);
+  display: flex;
+  flex-direction: column;
 }
 
 .settings-section {
+  width: 100%;
+  flex: 1;
   animation: fadeIn 0.3s ease-in;
+}
+
+/* All tab panels share the same content width */
+.settings-form,
+.theme-selector,
+.permissions-container,
+.permissions-info,
+.groups-list,
+.users-table-container,
+.permissions-help {
+  width: 100%;
+  max-width: none;
 }
 
 @keyframes fadeIn {
@@ -86,15 +110,12 @@
 .settings-section h2 {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.65rem;
   color: var(--text-heading);
-  margin-bottom: 25px;
-  padding-bottom: 15px;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.85rem;
   border-bottom: 2px solid var(--border-color);
-}
-
-.settings-form {
-  max-width: 800px;
+  font-size: var(--text-xl);
 }
 
 .form-row {
@@ -138,7 +159,7 @@
 
 /* Theme Selector */
 .theme-selector {
-  max-width: 900px;
+  width: 100%;
 }
 
 .theme-section-label {
@@ -242,7 +263,7 @@
 
 /* Permissions */
 .permissions-info {
-  max-width: 800px;
+  width: 100%;
 }
 
 .permissions-info h3 {
@@ -425,7 +446,7 @@
 
 /* Permissions Management */
 .permissions-container {
-  max-width: 1200px;
+  width: 100%;
 }
 
 .permissions-selector {
@@ -721,6 +742,11 @@
 @media (max-width: 768px) {
   .settings-container {
     flex-direction: column;
+    min-height: auto;
+  }
+
+  .settings-content {
+    padding: var(--space-4);
   }
 
   .settings-sidebar {
@@ -757,42 +783,10 @@
   }
 }
 
-/* Modal Styles (shared with Users and Groups) */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.modal-content {
-  background: var(--surface-color);
-  border-radius: 8px;
-  padding: 25px;
-  max-width: 600px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.modal-content h2 {
-  margin: 0 0 20px 0;
-  color: var(--text-heading);
-}
-
+/* Modal modifiers — base in App.css */
 .user-details-modal,
 .group-details-modal {
   max-width: 800px;
-  max-height: 90vh;
-  overflow-y: auto;
 }
 
 .modal-header {

@@ -13,10 +13,10 @@ async function getConnect() {
   }
 }
 
-function resolveSecureTransport(port, secure) {
+export function resolveSecureTransport(port, secure) {
   if (secure === 'ssl' || secure === 'on' || port === 465) return 'on';
-  if (secure === 'starttls' || port === 587) return 'starttls';
-  return 'off';
+  if (secure === 'starttls' || secure === 'off' || port === 587) return 'starttls';
+  return 'starttls';
 }
 
 function encodeBase64(str) {
@@ -70,6 +70,44 @@ class SmtpSession {
     this.buffer = '';
   }
 
+  /**
+   * Release stream locks without closing the underlying connection.
+   * Required before socket.startTls() — locked streams block the TLS upgrade.
+   */
+  releaseLocks() {
+    try {
+      this.writer.releaseLock();
+    } catch {
+      /* ignore */
+    }
+    try {
+      this.reader.releaseLock();
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async dispose() {
+    try {
+      await this.writer.close();
+    } catch {
+      try {
+        this.writer.releaseLock();
+      } catch {
+        /* ignore */
+      }
+    }
+    try {
+      await this.reader.cancel();
+    } catch {
+      try {
+        this.reader.releaseLock();
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
   async readLine() {
     while (!this.buffer.includes('\n')) {
       const { value, done } = await this.reader.read();
@@ -118,17 +156,31 @@ class SmtpSession {
     } catch {
       /* ignore */
     }
-    try {
-      await this.writer.close();
-    } catch {
-      /* ignore */
-    }
-    try {
-      await this.reader.cancel();
-    } catch {
-      /* ignore */
-    }
+    await this.dispose();
   }
+}
+
+async function ehlo(session, host) {
+  await session.command(`EHLO ${host}`, 250);
+}
+
+async function authenticate(session, username, password) {
+  await session.command('AUTH LOGIN', 334);
+  await session.command(encodeBase64(username), 334);
+  await session.command(encodeBase64(password || ''), 235);
+}
+
+async function upgradeStartTls(socket, session, host) {
+  await session.command('STARTTLS', 220);
+  // Do not close streams — only unlock so startTls() can take over the connection.
+  session.releaseLocks();
+
+  const secureSocket = socket.startTls();
+  await secureSocket.opened;
+
+  const secureSession = new SmtpSession(secureSocket.readable, secureSocket.writable);
+  await ehlo(secureSession, host);
+  return secureSession;
 }
 
 /**
@@ -145,42 +197,53 @@ export async function sendSmtpMail(smtp, message) {
   const port = parseInt(String(smtp.port || 587), 10);
   if (!host) throw new Error('SMTP host is required');
 
-  const socket = connect({
-    hostname: host,
-    port,
-    secureTransport: resolveSecureTransport(port, smtp.secure),
-  });
+  const secureTransport = resolveSecureTransport(port, smtp.secure);
+  const ehloHost = host;
 
-  const session = new SmtpSession(socket.readable, socket.writable);
-  await session.readResponse(220);
-  await session.command(`EHLO ${host}`, 250);
+  const socket = connect({ hostname: host, port }, { secureTransport });
+  await socket.opened;
 
-  if (smtp.username) {
-    await session.command('AUTH LOGIN', 334);
-    await session.command(encodeBase64(smtp.username), 334);
-    await session.command(encodeBase64(smtp.password || ''), 235);
+  let session = new SmtpSession(socket.readable, socket.writable);
+  try {
+    await session.readResponse(220);
+    await ehlo(session, ehloHost);
+
+    if (secureTransport === 'starttls') {
+      session = await upgradeStartTls(socket, session, ehloHost);
+    }
+
+    if (smtp.username) {
+      await authenticate(session, smtp.username, smtp.password);
+    }
+
+    const fromEmail = smtp.from_email?.trim();
+    if (!fromEmail) throw new Error('From email is required');
+
+    await session.command(`MAIL FROM:<${fromEmail}>`, 250);
+    await session.command(`RCPT TO:<${message.to}>`, 250);
+    await session.command('DATA', 354);
+
+    const mime = buildMime({
+      fromEmail,
+      fromName: smtp.from_name,
+      to: message.to,
+      subject: message.subject,
+      html: message.html,
+      text: message.text,
+    });
+
+    await session.send(mime);
+    await session.send('.');
+    await session.readResponse(250);
+    await session.close();
+  } catch (err) {
+    try {
+      await session.dispose();
+    } catch {
+      /* ignore */
+    }
+    throw err;
   }
-
-  const fromEmail = smtp.from_email?.trim();
-  if (!fromEmail) throw new Error('From email is required');
-
-  await session.command(`MAIL FROM:<${fromEmail}>`, 250);
-  await session.command(`RCPT TO:<${message.to}>`, 250);
-  await session.command('DATA', 354);
-
-  const mime = buildMime({
-    fromEmail,
-    fromName: smtp.from_name,
-    to: message.to,
-    subject: message.subject,
-    html: message.html,
-    text: message.text,
-  });
-
-  await session.send(mime);
-  await session.send('.');
-  await session.readResponse(250);
-  await session.close();
 
   return { ok: true };
 }

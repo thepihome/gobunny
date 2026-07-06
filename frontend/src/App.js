@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Jobs from './pages/Jobs';
 import JobDetails from './pages/JobDetails';
 import Resumes from './pages/Resumes';
+import ResumeStudio from './pages/ResumeStudio';
 import Matches from './pages/Matches';
 import Candidates from './pages/Candidates';
 import RegisterCandidates from './pages/RegisterCandidates';
@@ -37,6 +38,7 @@ function App() {
                       <Route path="/jobs" element={<Jobs />} />
                       <Route path="/jobs/:id" element={<JobDetails />} />
                       <Route path="/resumes" element={<Resumes />} />
+                      <Route path="/resumes/:id/studio" element={<ResumeStudio />} />
                       <Route path="/matches" element={<Matches />} />
                       <Route path="/candidates" element={<Candidates />} />
                       <Route path="/candidates/:id" element={<CandidateDetails />} />

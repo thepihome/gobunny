@@ -13,16 +13,14 @@
   --text-primary: #1e293b;
   --text-secondary: #64748b;
 
-  /* GoBunny brand palette */
+  /* GoBunny brand palette + vivid scale */
   --primary-color: #2b3d7e;
   --primary-hover: #1e2d5f;
-  --primary-light: #3d5299;
+  --primary-light: #4f63c4;
+  --primary-vivid: #5b7fd4;
   --secondary-color: #64748b;
   --accent-color: #2b3d7e;
   --background-color: var(--bg-primary);
-  --surface-color: var(--bg-secondary);
-  --surface-elevated: #ffffff;
-  --surface-muted: #f1f5f9;
   --text-color: var(--text-primary);
   --text-heading: #0f172a;
   --text-secondary-color: var(--text-secondary);
@@ -36,13 +34,54 @@
   --error-color: #dc2626;
   --info-color: #2563eb;
 
+  /* Chart palette — synced with brand tokens */
+  --chart-1: #2b3d7e;
+  --chart-2: #7c3aed;
+  --chart-3: #0891b2;
+  --chart-4: #059669;
+  --chart-5: #d97706;
+  --chart-6: #f43f5e;
+
+  /* Interactive state shades */
+  --success-hover: #047857;
+  --warning-hover: #b45309;
+  --error-hover: #b91c1c;
+  --info-hover: #1d4ed8;
+
   --mesh-gradient: linear-gradient(180deg, #f8fafc 0%, #fafbfc 55%, #ffffff 100%);
 
-  --glass-panel-bg: #ffffff;
-  --glass-panel-border: rgba(15, 23, 42, 0.08);
-  --glass-sidebar-bg: #ffffff;
-  --glass-filter-bg: #f8fafc;
-  --glass-table-header: #f8fafc;
+  /* iOS-inspired frosted glass — visible translucency + blur */
+  --glass-blur: 24px;
+  --glass-blur-sm: 14px;
+  --glass-blur-lg: 32px;
+  --glass-saturate: 1.45;
+  --glass-bg: rgba(255, 255, 255, 0.5);
+  --glass-bg-strong: rgba(255, 255, 255, 0.62);
+  --glass-bg-muted: rgba(255, 255, 255, 0.38);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.28);
+  --glass-border-outer: rgba(255, 255, 255, 0.55);
+  --glass-border-inner: rgba(255, 255, 255, 0.85);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --glass-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.05),
+    0 2px 8px rgba(15, 23, 42, 0.06),
+    0 8px 32px rgba(15, 23, 42, 0.08);
+
+  --glass-panel-bg: var(--glass-bg-strong);
+  --glass-panel-border: var(--glass-border-outer);
+  --glass-sidebar-bg: rgba(255, 255, 255, 0.52);
+  --glass-filter-bg: var(--glass-bg-muted);
+  --glass-table-header: rgba(248, 250, 252, 0.55);
+  --surface-color: var(--glass-bg-strong);
+  --surface-muted: var(--glass-bg-muted);
+  --surface-elevated: rgba(255, 255, 255, 0.72);
+  --surface-hover: color-mix(in srgb, var(--primary-color) 6%, var(--glass-bg-muted));
+
+  /* Solid chrome surfaces (navbar dropdowns — not glass) */
+  --chrome-panel-bg: #ffffff;
+  --chrome-panel-muted: #f8fafc;
+  --chrome-panel-hover: #f1f5f9;
+  --chrome-btn-bg: #f1f5f9;
 
   --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
   --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
@@ -50,15 +89,21 @@
   --shadow-xl: 0 16px 40px rgba(15, 23, 42, 0.1);
   --shadow-glass: 0 1px 3px rgba(15, 23, 42, 0.06);
 
-  --gradient-primary: #2b3d7e;
+  --glow-primary: 0 4px 20px color-mix(in srgb, var(--primary-color) 32%, transparent);
+  --glow-accent: 0 8px 32px color-mix(in srgb, #7c3aed 18%, transparent);
+
+  --gradient-primary: linear-gradient(135deg, #2b3d7e 0%, #4f63c4 55%, #7c3aed 100%);
   --gradient-secondary: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-  --gradient-surface: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+  --gradient-surface: linear-gradient(145deg, #ffffff 0%, #f8fafc 50%, #f0f9ff 100%);
   --gradient-profile: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
 
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 280ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
   --radius-full: 9999px;
 
   /* Typography scale */
@@ -82,7 +127,7 @@
   --space-12: 3rem;
   --space-16: 4rem;
 
-  --space-page: clamp(1rem, 2.5vw, 2rem);
+  --space-page: clamp(1rem, 2vw, 1.5rem);
   --space-section: clamp(1rem, 2vw, 1.5rem);
 
   /* Container breakpoints */
@@ -104,9 +149,9 @@
   --primary-light: #7b9ae0;
   --secondary-color: #94a3b8;
   --background-color: var(--bg-primary);
-  --surface-color: var(--bg-secondary);
-  --surface-elevated: #1e293b;
-  --surface-muted: #334155;
+  --surface-color: var(--glass-bg-strong);
+  --surface-elevated: rgba(30, 41, 59, 0.75);
+  --surface-muted: var(--glass-bg-muted);
   --text-color: var(--text-primary);
   --text-heading: #f8fafc;
   --text-secondary-color: var(--text-secondary);
@@ -118,16 +163,44 @@
 
   --mesh-gradient: linear-gradient(168deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
 
-  --glass-panel-bg: #1e293b;
-  --glass-panel-border: rgba(148, 163, 184, 0.14);
-  --glass-sidebar-bg: #1e293b;
-  --glass-filter-bg: #0f172a;
-  --glass-table-header: #0f172a;
+  --glass-bg: rgba(30, 41, 59, 0.55);
+  --glass-bg-strong: rgba(30, 41, 59, 0.68);
+  --glass-bg-muted: rgba(15, 23, 42, 0.48);
+  --glass-bg-subtle: rgba(30, 41, 59, 0.35);
+  --glass-border-outer: rgba(255, 255, 255, 0.1);
+  --glass-border-inner: rgba(255, 255, 255, 0.06);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --glass-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 4px 16px rgba(0, 0, 0, 0.25),
+    0 8px 32px rgba(0, 0, 0, 0.2);
+
+  --glass-panel-bg: var(--glass-bg-strong);
+  --glass-panel-border: var(--glass-border-outer);
+  --glass-sidebar-bg: rgba(15, 23, 42, 0.58);
+  --glass-filter-bg: var(--glass-bg-muted);
+  --glass-table-header: rgba(15, 23, 42, 0.55);
+  --surface-color: var(--glass-bg-strong);
+  --surface-muted: var(--glass-bg-muted);
+  --surface-elevated: rgba(30, 41, 59, 0.75);
+  --surface-hover: color-mix(in srgb, var(--primary-color) 10%, var(--glass-bg-muted));
+
+  --chrome-panel-bg: #1e293b;
+  --chrome-panel-muted: #0f172a;
+  --chrome-panel-hover: #334155;
+  --chrome-btn-bg: rgba(255, 255, 255, 0.12);
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.3);
   --shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.35);
+
+  --chart-1: #5b7fd4;
+  --chart-2: #7b9ae0;
+  --chart-3: #94b4f0;
+  --chart-4: #34d399;
+  --chart-5: #fbbf24;
+  --chart-6: #94a3b8;
 }
 
 /* System theme preference (when no explicit light override) */
@@ -143,9 +216,13 @@
     --primary-light: #7b9ae0;
     --secondary-color: #94a3b8;
     --background-color: var(--bg-primary);
-    --surface-color: var(--bg-secondary);
-    --surface-elevated: #1e293b;
-    --surface-muted: #334155;
+    --surface-color: var(--glass-bg-strong);
+    --surface-elevated: rgba(30, 41, 59, 0.75);
+    --surface-muted: var(--glass-bg-muted);
+    --chrome-panel-bg: #1e293b;
+    --chrome-panel-muted: #0f172a;
+    --chrome-panel-hover: #334155;
+    --chrome-btn-bg: rgba(255, 255, 255, 0.12);
     --text-color: var(--text-primary);
     --text-heading: #f8fafc;
     --text-secondary-color: var(--text-secondary);
@@ -157,16 +234,36 @@
 
     --mesh-gradient: linear-gradient(168deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
 
-    --glass-panel-bg: #1e293b;
-    --glass-panel-border: rgba(148, 163, 184, 0.14);
-    --glass-sidebar-bg: #1e293b;
-    --glass-filter-bg: #0f172a;
-    --glass-table-header: #0f172a;
+    --glass-bg: rgba(30, 41, 59, 0.55);
+    --glass-bg-strong: rgba(30, 41, 59, 0.68);
+    --glass-bg-muted: rgba(15, 23, 42, 0.48);
+    --glass-bg-subtle: rgba(30, 41, 59, 0.35);
+    --glass-border-outer: rgba(255, 255, 255, 0.1);
+    --glass-border-inner: rgba(255, 255, 255, 0.06);
+    --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    --glass-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.05),
+      0 4px 16px rgba(0, 0, 0, 0.25),
+      0 8px 32px rgba(0, 0, 0, 0.2);
+
+    --glass-panel-bg: var(--glass-bg-strong);
+    --glass-panel-border: var(--glass-border-outer);
+    --glass-sidebar-bg: rgba(15, 23, 42, 0.58);
+    --glass-filter-bg: var(--glass-bg-muted);
+    --glass-table-header: rgba(15, 23, 42, 0.55);
+    --surface-hover: color-mix(in srgb, var(--primary-color) 10%, var(--glass-bg-muted));
 
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.3);
     --shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.35);
+
+    --chart-1: #5b7fd4;
+    --chart-2: #7b9ae0;
+    --chart-3: #94b4f0;
+    --chart-4: #34d399;
+    --chart-5: #fbbf24;
+    --chart-6: #94a3b8;
   }
 }
 
@@ -176,7 +273,7 @@ html {
 
 body {
   font-family:
-    'DM Sans',
+    'Inter',
     -apple-system,
     BlinkMacSystemFont,
     'Segoe UI',
@@ -187,7 +284,10 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: var(--mesh-gradient);
+  background:
+    radial-gradient(ellipse 90% 60% at 10% -5%, color-mix(in srgb, var(--primary-color) 7%, transparent), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 95% 105%, color-mix(in srgb, var(--primary-color) 5%, transparent), transparent 50%),
+    var(--mesh-gradient);
   background-attachment: fixed;
   background-size: cover;
   color: var(--text-color);
@@ -200,7 +300,7 @@ body {
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  font-family: 'JetBrains Mono', source-code-pro, Menlo, Monaco, Consolas, monospace;
 }
 
 *:focus-visible {
@@ -274,4 +374,64 @@ code {
     grid-template-columns: 1fr;
     gap: var(--space-6);
   }
+}
+
+/* ── Frosted glass surfaces (iOS-style, subtle) ── */
+.glass-surface,
+.card,
+.dashboard-panel,
+.dashboard-tabs,
+.summary-chip,
+.kpi-card,
+.chart-card,
+.list-filters-panel,
+.auth-card,
+.settings-container,
+.modal-content,
+.table,
+.jobs-table-container,
+.candidates-table-container,
+.users-table-container,
+.roles-table-container,
+.quick-action-card,
+.crm-stat-card,
+.crm-insights.glass-surface,
+.empty-state,
+.groups-list {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border-color: var(--glass-border-outer);
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+}
+
+.dashboard-tab.active,
+.list-filter-input-icon,
+.theme-toggle,
+.menu-toggle,
+.sidebar-collapse-toggle,
+.form-group input,
+.form-group select,
+.form-group textarea,
+.list-filters-panel .filter-group input,
+.list-filters-panel .filter-group select {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur-sm)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm)) saturate(var(--glass-saturate));
+}
+
+.dashboard-tabs,
+.list-filters-panel,
+.theme-toggle {
+  background: var(--glass-bg-muted);
+}
+
+.table th,
+.list-filters-panel {
+  background: var(--glass-table-header);
+}
+
+.modal-overlay {
+  backdrop-filter: blur(6px) saturate(1.1);
+  -webkit-backdrop-filter: blur(6px) saturate(1.1);
 }

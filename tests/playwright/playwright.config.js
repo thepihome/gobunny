@@ -35,7 +35,7 @@ module.exports = defineConfig({
           'npx --yes serve -s build -l 3000',
         cwd: path.join(__dirname, '../../frontend'),
         url: `${config.baseURL.replace(/\/$/, '')}/login`,
-        reuseExistingServer: true,
+        reuseExistingServer: process.env.PLAYWRIGHT_REUSE_SERVER === 'true',
         timeout: 60_000,
       },
   projects: [

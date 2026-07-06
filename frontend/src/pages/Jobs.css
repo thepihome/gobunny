@@ -1,5 +1,33 @@
 /* .list-page width from App.css */
 
+.job-mode-toggle {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  background: var(--chrome-panel-muted);
+  border: 1px solid var(--border-color);
+  gap: 2px;
+  box-shadow: var(--shadow-sm);
+}
+
+.job-mode-toggle button {
+  padding: 0.35rem 0.75rem;
+  border: none;
+  border-radius: calc(var(--radius-md) - 2px);
+  background: transparent;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary-color);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.job-mode-toggle button.active {
+  background: var(--chrome-btn-bg);
+  color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+}
+
 /* Jobs table shell: glass + scroll from App.css */
 
 .jobs-table {
@@ -12,21 +40,23 @@
 }
 
 .jobs-table th {
-  padding: 0.85rem 1rem;
+  padding: var(--space-3) var(--space-4);
   text-align: left;
   font-weight: 600;
-  color: var(--text-color);
-  border-bottom: 2px solid var(--border-light);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  color: var(--text-secondary-color);
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--text-sm);
+  text-transform: none;
+  letter-spacing: 0.01em;
+  line-height: 1.4;
 }
 
 .jobs-table td {
-  padding: 0.85rem 1rem;
+  padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border-light);
   vertical-align: middle;
-  font-size: 0.92rem;
+  font-size: var(--text-base);
+  line-height: 1.45;
 }
 
 .job-row {
@@ -35,8 +65,8 @@
 }
 
 .job-row:hover {
-  background-color: #f8f9fa;
-  transform: translateX(2px);
+  background: var(--surface-hover);
+  box-shadow: inset 3px 0 0 var(--primary-color);
 }
 
 .job-title-cell {
@@ -46,7 +76,7 @@
 }
 
 .job-title-cell strong {
-  color: #333;
+  color: var(--text-heading);
   font-size: 15px;
   transition: color 0.2s;
 }
@@ -82,7 +112,7 @@
   background: #f0f0f0;
   color: var(--text-secondary-color);
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 12px;
   text-transform: capitalize;
 }
@@ -131,135 +161,141 @@
   font-size: 12px;
 }
 
-/* Post Job Modal */
-.post-job-modal {
-  max-width: 900px;
-  max-height: 90vh;
+/* Post Job Modal — scoped under .post-job-modal (portaled to body) */
+.modal-content.post-job-modal {
+  width: min(100%, 900px);
+  max-height: min(92vh, calc(100dvh - 2rem));
   overflow-y: auto;
 }
 
-.modal-header {
+.post-job-modal .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 25px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #eee;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-color);
 }
 
-.modal-header h2 {
+.post-job-modal .modal-header h2 {
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: #333;
+  gap: var(--space-2);
+  color: var(--text-heading);
+  font-size: var(--text-xl);
 }
 
-.btn-close-modal {
-  background: none;
-  border: none;
-  font-size: 24px;
+.post-job-modal .btn-close-modal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  background: var(--chrome-panel-muted);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 1.125rem;
   cursor: pointer;
-  color: var(--text-muted);
-  padding: 5px;
+  color: var(--text-secondary-color);
+  padding: 0;
   line-height: 1;
-  transition: color 0.2s;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.btn-close-modal:hover {
-  color: #333;
+.post-job-modal .btn-close-modal:hover {
+  color: var(--text-heading);
+  background: var(--chrome-panel-hover);
+  border-color: color-mix(in srgb, var(--primary-color) 30%, var(--border-color));
 }
 
 .post-job-form {
   display: flex;
   flex-direction: column;
-  gap: 25px;
+  gap: var(--space-4);
 }
 
-.form-section {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
+.post-job-modal .form-section {
+  background: var(--chrome-panel-muted);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
 }
 
-.form-section h3 {
-  margin: 0 0 20px 0;
-  color: #333;
-  font-size: 18px;
-  padding-bottom: 10px;
+.post-job-modal .form-section h3 {
+  margin: 0 0 var(--space-4);
+  color: var(--text-heading);
+  font-size: var(--text-lg);
+  padding-bottom: var(--space-2);
   border-bottom: 2px solid var(--primary-color);
 }
 
-.form-row {
+.post-job-modal .form-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 15px;
-  margin-bottom: 15px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
 }
 
-.form-group {
-  margin-bottom: 15px;
+.post-job-modal .form-group {
+  margin-bottom: var(--space-3);
 }
 
-.form-group label {
+.post-job-modal .form-group label {
   display: flex;
   align-items: center;
-  gap: 5px;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #333;
-  font-size: 14px;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+  font-weight: 600;
+  color: var(--text-heading);
+  font-size: var(--text-sm);
 }
 
-.form-group input,
-.form-group select,
-.form-group textarea {
+.post-job-modal .form-group input,
+.post-job-modal .form-group select,
+.post-job-modal .form-group textarea {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
   font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  color: var(--text-color);
+  background: var(--chrome-panel-bg);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
+.post-job-modal .form-group input:focus,
+.post-job-modal .form-group select:focus,
+.post-job-modal .form-group textarea:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 15%, transparent);
 }
 
-.form-group textarea {
+.post-job-modal .form-group textarea {
   resize: vertical;
   min-height: 120px;
 }
 
-.form-hint {
-  margin: 5px 0 0 0;
-  font-size: 12px;
+.post-job-modal .form-hint {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xs);
   color: var(--text-secondary-color);
-  font-style: italic;
 }
 
-.modal-actions {
+.post-job-modal .modal-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-2);
   justify-content: flex-end;
-  padding-top: 20px;
-  border-top: 1px solid #eee;
-  margin-top: 10px;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-color);
+  margin-top: var(--space-2);
 }
 
 @media (max-width: 768px) {
-  .form-row {
+  .post-job-modal .form-row {
     grid-template-columns: 1fr;
-  }
-  
-  .post-job-modal {
-    max-width: 95%;
   }
 }
 

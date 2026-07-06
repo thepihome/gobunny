@@ -535,7 +535,7 @@ export async function handleCandidates(request, env, user) {
 
       const candidate = await queryOne(
         env,
-        'SELECT id, first_name, last_name, email, phone, created_at FROM users WHERE id = ? AND role = ?',
+        'SELECT id, first_name, last_name, email, phone, is_active, created_at FROM users WHERE id = ? AND role = ?',
         [candidateId, 'candidate']
       );
 
@@ -571,7 +571,13 @@ export async function handleCandidates(request, env, user) {
       // Get CRM interactions
       const crmInteractions = await query(
         env,
-        'SELECT * FROM crm_contacts WHERE candidate_id = ? ORDER BY interaction_date DESC',
+        `SELECT c.*,
+                u.first_name as consultant_first_name,
+                u.last_name as consultant_last_name
+         FROM crm_contacts c
+         LEFT JOIN users u ON c.consultant_id = u.id
+         WHERE c.candidate_id = ?
+         ORDER BY c.interaction_date DESC, c.created_at DESC`,
         [candidateId]
       );
 

@@ -1,23 +1,17 @@
 import React, { useState, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import api from '../config/api';
+import api, { openAuthenticatedFile } from '../config/api';
 import { useAuth } from '../context/AuthContext';
-import { FiEdit, FiSave, FiX, FiClock, FiSearch, FiFilter, FiChevronDown, FiChevronUp, FiUserPlus, FiUserMinus, FiExternalLink, FiDatabase } from 'react-icons/fi';
+import { FiEdit, FiSave, FiX, FiClock, FiSearch, FiFilter, FiChevronDown, FiChevronUp, FiUserPlus, FiUserMinus, FiDatabase, FiPlus, FiActivity, FiMail, FiPhone, FiArrowLeft } from 'react-icons/fi';
 import './CandidateDetails.css';
 import './CRM.css';
 import LoadingButton, { iconSpinClass } from '../components/LoadingButton';
-
-function crmStatusBadgeClass(status) {
-  const s = status || 'open';
-  const known = ['open', 'pending', 'scheduled', 'completed', 'cancelled'];
-  return known.includes(s) ? `crm-badge crm-badge--${s}` : 'crm-badge crm-badge--unknown';
-}
-
-function formatCrmType(t) {
-  if (!t) return 'Note';
-  return String(t).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-}
+import CrmTimeline, { crmIsFollowUpOverdue } from '../components/CrmTimeline';
+import CrmInteractionModal from '../components/CrmInteractionModal';
+import IconButton from '../components/IconButton';
+import Modal from '../components/Modal';
+import { isActiveStatus } from '../utils/activeStatus';
 
 function parseStringArray(value) {
   if (!value) return [];
@@ -63,6 +57,7 @@ function logActionClass(action) {
 
 const CandidateDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
@@ -73,6 +68,7 @@ const CandidateDetails = () => {
   const [logDateTo, setLogDateTo] = useState('');
   const [logAction, setLogAction] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [showLogCrmModal, setShowLogCrmModal] = useState(false);
 
   const { data: candidate, isLoading, isError, error } = useQuery(
     ['candidate', id],
@@ -143,11 +139,10 @@ const CandidateDetails = () => {
   // Build activity logs query params
   const activityLogsParams = useMemo(() => {
     const params = new URLSearchParams();
-    // Use profile id if available, otherwise use user id (candidate id)
-    const entityId = candidate?.profile?.id || candidate?.id;
-    if (entityId) {
+    const profileId = candidate?.profile?.id;
+    if (profileId) {
       params.append('entity_type', 'candidate_profile');
-      params.append('entity_id', entityId);
+      params.append('entity_id', profileId);
     }
     params.append('limit', showAllLogs ? '100' : '5');
     if (logSearch) params.append('search', logSearch);
@@ -155,31 +150,18 @@ const CandidateDetails = () => {
     if (logDateTo) params.append('date_to', logDateTo);
     if (logAction) params.append('action', logAction);
     return params.toString();
-  }, [candidate?.profile?.id, candidate?.id, showAllLogs, logSearch, logDateFrom, logDateTo, logAction]);
+  }, [candidate?.profile?.id, showAllLogs, logSearch, logDateFrom, logDateTo, logAction]);
 
   // Fetch activity logs
   const { data: activityLogs, isLoading: isLoadingLogs } = useQuery(
-    ['activity-logs', 'candidate_profile', candidate?.profile?.id || candidate?.id, activityLogsParams],
-    () => {
-      const entityId = candidate?.profile?.id || candidate?.id;
-      if (!entityId) {
-        console.log('No entity ID available for activity logs');
-        return [];
-      }
-      console.log('Fetching activity logs with params:', activityLogsParams);
-      return api.get(`/activity-logs?${activityLogsParams}`)
-        .then(res => {
-          console.log('Activity logs response:', res.data);
-          return Array.isArray(res.data) ? res.data : [];
-        })
-        .catch((err) => {
-          console.error('Error fetching activity logs:', err);
-          return [];
-        });
-    },
+    ['activity-logs', 'candidate_profile', candidate?.profile?.id, activityLogsParams],
+    () =>
+      api.get(`/activity-logs?${activityLogsParams}`)
+        .then(res => (Array.isArray(res.data) ? res.data : []))
+        .catch(() => []),
     {
-      enabled: !!(candidate?.profile?.id || candidate?.id) && (user?.role === 'consultant' || user?.role === 'admin'),
-      refetchOnWindowFocus: false
+      enabled: !!candidate?.profile?.id && (user?.role === 'consultant' || user?.role === 'admin'),
+      refetchOnWindowFocus: false,
     }
   );
 
@@ -240,45 +222,98 @@ const CandidateDetails = () => {
   if (isError) {
     const message = error?.response?.data?.error || error?.message || 'Failed to load candidate profile';
     return (
-      <div className="candidate-details">
-        <div className="error">{message}</div>
-        <Link to="/candidates" className="btn btn-secondary" style={{ marginTop: '1rem' }}>
-          Back to Candidates
-        </Link>
+      <div className="candidate-details list-page">
+        <div className="candidate-details-toolbar">
+          <IconButton icon={FiArrowLeft} label="Back to candidates" onClick={() => navigate('/candidates')} />
+        </div>
+        <div className="candidate-details-card">
+          <div className="error">{message}</div>
+          <Link to="/candidates" className="btn btn-secondary" style={{ marginTop: '1rem' }}>
+            Back to Candidates
+          </Link>
+        </div>
       </div>
     );
   }
 
   if (!candidate) {
-    return <div className="error">Candidate not found</div>;
+    return (
+      <div className="candidate-details list-page">
+        <div className="candidate-details-toolbar">
+          <IconButton icon={FiArrowLeft} label="Back to candidates" onClick={() => navigate('/candidates')} />
+        </div>
+        <div className="candidate-details-card">
+          <div className="error">Candidate not found</div>
+        </div>
+      </div>
+    );
   }
 
   const profile = candidate.profile || {};
   const canEdit = user?.role === 'admin' || user?.role === 'consultant' || user?.id === parseInt(id);
+  const canViewCrm = user?.role === 'consultant' || user?.role === 'admin';
+  const crmInteractions = candidate.crm_interactions || [];
+  const crmOpenCount = crmInteractions.filter((i) =>
+    ['open', 'pending', 'scheduled'].includes(i.status)
+  ).length;
+  const crmOverdueCount = crmInteractions.filter(crmIsFollowUpOverdue).length;
+  const crmLastContact = crmInteractions[0]?.interaction_date;
+  const crmNextFollowUp = crmInteractions
+    .filter((i) => i.follow_up_date && !['completed', 'cancelled'].includes(i.status))
+    .map((i) => ({ date: new Date(i.follow_up_date), id: i.id }))
+    .sort((a, b) => a.date - b.date)[0];
 
   return (
-    <div className="candidate-details">
-      <div className="candidate-header">
-        <h1>{candidate.first_name} {candidate.last_name}</h1>
-        {canEdit && !isEditing && (
-          <button className="btn btn-primary" onClick={() => setIsEditing(true)}>
-            <FiEdit /> Edit Profile
-          </button>
-        )}
+    <div className="candidate-details list-page">
+      <div className="candidate-details-toolbar page-toolbar">
+        <IconButton
+          icon={FiArrowLeft}
+          label="Back to candidates"
+          onClick={() => navigate('/candidates')}
+        />
       </div>
-      
-      <div className="candidate-info">
-        <p><strong>Email:</strong> {candidate.email}</p>
-        {candidate.phone && <p><strong>Phone:</strong> {candidate.phone}</p>}
+
+      <div className="candidate-details-card candidate-details-hero">
+        <div className="candidate-details-header">
+          <div className="candidate-details-identity">
+            <h1>{candidate.first_name} {candidate.last_name}</h1>
+            <div className="candidate-details-contact">
+              <span className="candidate-details-contact-item">
+                <FiMail aria-hidden /> {candidate.email}
+              </span>
+              {candidate.phone && (
+                <span className="candidate-details-contact-item">
+                  <FiPhone aria-hidden /> {candidate.phone}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="list-page-header-actions candidate-details-actions">
+            <span className={`badge badge-${isActiveStatus(candidate.is_active) ? 'success' : 'danger'}`}>
+              {isActiveStatus(candidate.is_active) ? 'Active' : 'Inactive'}
+            </span>
+            {canEdit && !isEditing && (
+              <IconButton
+                icon={FiEdit}
+                label="Edit profile"
+                variant="primary"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+              />
+            )}
+          </div>
+        </div>
+
         {user?.role === 'admin' && (
-          <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '5px' }}>
-            <p><strong>Consultant Assignment:</strong></p>
+          <div className="candidate-assignment-panel">
+            <p className="candidate-assignment-label"><strong>Consultant assignment</strong></p>
             {candidate.consultant ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '5px' }}>
+              <div className="candidate-assignment-row">
                 <span>
                   {candidate.consultant.first_name} {candidate.consultant.last_name} ({candidate.consultant.email})
                 </span>
                 <button
+                  type="button"
                   className="btn btn-danger btn-sm"
                   onClick={() => {
                     if (window.confirm(`Unassign ${candidate.consultant.first_name} ${candidate.consultant.last_name} from this candidate?`)) {
@@ -291,8 +326,8 @@ const CandidateDetails = () => {
                 </button>
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '5px' }}>
-                <span style={{ color: '#666' }}>Not assigned</span>
+              <div className="candidate-assignment-row">
+                <span className="text-muted">Not assigned</span>
                 <LoadingButton
                   className="btn btn-success btn-sm"
                   icon={FiUserPlus}
@@ -306,7 +341,7 @@ const CandidateDetails = () => {
         )}
       </div>
 
-      <div className="candidate-section">
+      <div className="candidate-section candidate-details-card">
         <div className="section-header">
           <h2>Profile Information</h2>
           {isEditing && (
@@ -648,7 +683,7 @@ const CandidateDetails = () => {
         )}
       </div>
 
-      <div className="candidate-section">
+      <div className="candidate-section candidate-details-card">
         <h2>Resumes ({candidate.resumes ? candidate.resumes.length : 0}/3)</h2>
         {candidate.resumes && candidate.resumes.length > 0 ? (
           <div className="resumes-list">
@@ -685,15 +720,20 @@ const CandidateDetails = () => {
                   <p><strong>Summary:</strong> {resume.summary}</p>
                 )}
                 {resume.file_path && (
-                  <a
-                    href={`http://localhost:5023/${resume.file_path}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
                     className="btn btn-primary btn-sm"
                     style={{ marginTop: '10px', display: 'inline-block' }}
+                    onClick={async () => {
+                      try {
+                        await openAuthenticatedFile(`/resumes/${resume.id}/download`);
+                      } catch {
+                        alert('Failed to download resume');
+                      }
+                    }}
                   >
                     View Resume
-                  </a>
+                  </button>
                 )}
               </div>
             );
@@ -704,7 +744,7 @@ const CandidateDetails = () => {
         )}
       </div>
 
-      <div className="candidate-section">
+      <div className="candidate-section candidate-details-card">
         <h2>Job Matches</h2>
         {candidate.matches && candidate.matches.length > 0 ? (
           <div className="matches-list">
@@ -722,63 +762,99 @@ const CandidateDetails = () => {
         )}
       </div>
 
-      <div className="candidate-section candidate-section-crm">
+      <div className="candidate-section candidate-section-crm candidate-details-card">
         <div className="candidate-section-crm-header">
-          <h2>CRM interactions</h2>
-          {(user?.role === 'consultant' || user?.role === 'admin') && (
-            <Link to="/crm" className="btn btn-secondary candidate-crm-dashboard-link">
-              <FiDatabase /> Open CRM
-              <FiExternalLink aria-hidden />
-            </Link>
+          <h2>
+            <FiActivity aria-hidden /> CRM activity
+          </h2>
+          {canViewCrm && (
+            <div className="candidate-crm-header-actions page-toolbar">
+              <IconButton
+                icon={FiPlus}
+                label="Log interaction"
+                variant="primary"
+                size="sm"
+                onClick={() => setShowLogCrmModal(true)}
+              />
+              <Link
+                to={`/crm?candidate=${id}`}
+                className="btn btn-icon btn-icon-sm btn-secondary"
+                title="Open CRM"
+                aria-label="Open CRM"
+              >
+                <FiDatabase aria-hidden />
+              </Link>
+            </div>
           )}
         </div>
-        <p className="candidate-crm-hint">
-          Summary for this candidate. Full filters, pipeline, and exports live on the{' '}
-          <Link to="/crm">CRM</Link> page.
-        </p>
-        {candidate.crm_interactions && candidate.crm_interactions.length > 0 ? (
-          <div className="crm-card-grid candidate-crm-mini-grid">
-            {candidate.crm_interactions.map((interaction) => (
-              <article key={interaction.id} className="crm-card">
-                <div className="crm-card__top">
-                  <div className="crm-card__type">
-                    <span className="crm-type-icon" aria-hidden>
-                      <FiDatabase />
-                    </span>
-                    <div>
-                      <h3>{formatCrmType(interaction.interaction_type)}</h3>
-                      <time dateTime={String(interaction.interaction_date).slice(0, 10)}>
-                        {new Date(interaction.interaction_date).toLocaleDateString(undefined, {
-                          weekday: 'short',
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </time>
-                    </div>
-                  </div>
-                  <span className={crmStatusBadgeClass(interaction.status)}>
-                    {(interaction.status || 'open').replace(/^\w/, (c) => c.toUpperCase())}
-                  </span>
+
+        {crmInteractions.length > 0 ? (
+          <>
+            <div className="candidate-crm-summary">
+              <div className="candidate-crm-summary__stat">
+                <span className="candidate-crm-summary__label">Total</span>
+                <strong>{crmInteractions.length}</strong>
+              </div>
+              <div className="candidate-crm-summary__stat">
+                <span className="candidate-crm-summary__label">Open</span>
+                <strong>{crmOpenCount}</strong>
+              </div>
+              {crmOverdueCount > 0 && (
+                <div className="candidate-crm-summary__stat candidate-crm-summary__stat--warn">
+                  <span className="candidate-crm-summary__label">Overdue follow-ups</span>
+                  <strong>{crmOverdueCount}</strong>
                 </div>
-                {interaction.notes && <p className="crm-card__notes crm-card__notes--full">{interaction.notes}</p>}
-                {interaction.follow_up_date && (
-                  <p className="crm-follow-tag">
-                    <FiClock aria-hidden />
-                    Follow-up: {new Date(interaction.follow_up_date).toLocaleDateString()}
-                  </p>
-                )}
-              </article>
-            ))}
-          </div>
+              )}
+              {crmLastContact && (
+                <div className="candidate-crm-summary__stat">
+                  <span className="candidate-crm-summary__label">Last contact</span>
+                  <strong>
+                    {new Date(crmLastContact).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </strong>
+                </div>
+              )}
+              {crmNextFollowUp && (
+                <div className={`candidate-crm-summary__stat${crmIsFollowUpOverdue(crmInteractions.find((i) => i.id === crmNextFollowUp.id)) ? ' candidate-crm-summary__stat--warn' : ''}`}>
+                  <span className="candidate-crm-summary__label">Next follow-up</span>
+                  <strong>
+                    {crmNextFollowUp.date.toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </strong>
+                </div>
+              )}
+            </div>
+
+            <CrmTimeline
+              items={crmInteractions}
+              showCandidateName={false}
+              showConsultant
+            />
+          </>
         ) : (
-          <p className="candidate-crm-empty">No CRM interactions for this candidate yet.</p>
+          <div className="candidate-crm-empty-state">
+            <p className="candidate-crm-empty">No CRM interactions for this candidate yet.</p>
+            {canViewCrm && (
+              <IconButton
+                icon={FiPlus}
+                label="Log first interaction"
+                size="sm"
+                onClick={() => setShowLogCrmModal(true)}
+              />
+            )}
+          </div>
         )}
       </div>
 
       {/* Activity History Section */}
       {(user?.role === 'consultant' || user?.role === 'admin') && (candidate?.profile?.id || candidate?.id) && (
-        <div className="candidate-section activity-history">
+        <div className="candidate-section candidate-details-card activity-history">
           <div className="activity-history-header">
             <h2>
               <FiClock /> Activity History
@@ -932,18 +1008,19 @@ const CandidateDetails = () => {
         </div>
       )}
 
-      {/* Assign Consultant Modal */}
-      {showAssignModal && user?.role === 'admin' && (
-        <div className="modal-overlay" onClick={() => {
+      <Modal
+        open={showAssignModal && user?.role === 'admin'}
+        onClose={() => {
           setShowAssignModal(false);
           setSelectedConsultant('');
-        }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Assign Candidate to Consultant</h2>
-            <p>
-              Assign <strong>{candidate.first_name} {candidate.last_name}</strong> to a consultant
-            </p>
-            <form onSubmit={handleAssignSubmit}>
+        }}
+        ariaLabel="Assign candidate to consultant"
+      >
+        <h2>Assign Candidate to Consultant</h2>
+        <p className="form-hint">
+          Assign <strong>{candidate.first_name} {candidate.last_name}</strong> to a consultant
+        </p>
+        <form onSubmit={handleAssignSubmit}>
               <div className="form-group">
                 <label>Select Consultant</label>
                 <select
@@ -982,8 +1059,20 @@ const CandidateDetails = () => {
                 </LoadingButton>
               </div>
             </form>
-          </div>
-        </div>
+      </Modal>
+
+      {canViewCrm && (
+        <CrmInteractionModal
+          open={showLogCrmModal}
+          onClose={() => setShowLogCrmModal(false)}
+          candidateId={id}
+          lockCandidate
+          candidateLabel={
+            candidate
+              ? `${candidate.first_name || ''} ${candidate.last_name || ''}`.trim()
+              : ''
+          }
+        />
       )}
     </div>
   );

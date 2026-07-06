@@ -5,8 +5,31 @@ import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { FiPlus, FiUser, FiMail, FiPhone, FiTrash2, FiX, FiSave, FiArrowUp, FiArrowDown, FiUsers, FiEdit3, FiFilter } from 'react-icons/fi';
 import { useResizableColumns } from '../hooks/useResizableColumns';
+import { useBulkSelection } from '../hooks/useBulkSelection';
 import LoadingButton from '../components/LoadingButton';
+import BulkActionBar from '../components/BulkActionBar';
+import IconButton from '../components/IconButton';
+import { downloadCsv } from '../utils/exportCsv';
+import { isActiveStatus } from '../utils/activeStatus';
 import './Candidates.css';
+
+const SELECT_COL = 44;
+const CANDIDATE_EXPORT_COLUMNS = [
+  { key: 'first_name', label: 'First Name' },
+  { key: 'last_name', label: 'Last Name' },
+  { key: 'email', label: 'Email' },
+  { key: 'phone', label: 'Phone' },
+  { key: 'current_job_title', label: 'Current Job Title' },
+  { key: 'current_company', label: 'Current Company' },
+  { key: 'years_of_experience', label: 'Years of Experience' },
+  { key: 'resume_count', label: 'Resume Count' },
+  { key: 'match_count', label: 'Match Count' },
+  {
+    key: 'is_active',
+    label: 'Status',
+    format: (row) => (isActiveStatus(row.is_active) ? 'Active' : 'Inactive'),
+  },
+];
 
 /** Map register_candidates row → candidate form defaults (fname/lname/email/phone/position/start_date/price/ref). */
 function mapRegisterRowToCandidateForm(row) {
@@ -77,6 +100,8 @@ const Candidates = () => {
   const [editingCandidate, setEditingCandidate] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showSaveKpiModal, setShowSaveKpiModal] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkAction, setBulkAction] = useState(null);
   const [kpiName, setKpiName] = useState('');
   
   // Sort state
@@ -214,7 +239,7 @@ const Candidates = () => {
     // Build filter params
     const params = new URLSearchParams();
     if (filterConditions.length > 0 && filterConditions.some(f => f.field && f.value)) {
-      params.append('query', encodeURIComponent(JSON.stringify(filterConditions)));
+      params.append('query', JSON.stringify(filterConditions));
     }
     const paramsString = params.toString();
     
@@ -236,11 +261,7 @@ const Candidates = () => {
     () => {
       const endpoint = user?.role === 'admin' ? '/candidates' : '/candidates/assigned';
       const url = debouncedFilterParams ? `${endpoint}?${debouncedFilterParams}` : endpoint;
-      console.log('Fetching candidates with URL:', url);
-      return api.get(url).then(res => {
-        console.log('Candidates response:', res.data);
-        return res.data;
-      });
+      return api.get(url).then(res => res.data);
     },
     {
       enabled: !!user?.role,
@@ -288,10 +309,10 @@ const Candidates = () => {
     }
   );
 
-  // Resizable columns hook (8 columns: Name, Email, Phone, Current Position, Experience, Resumes, Matches, Status)
+  // Resizable columns hook (9 columns: Select, Name, Email, Phone, Current Position, Experience, Resumes, Matches, Status)
   const { getColumnProps, ResizeHandle, tableRef } = useResizableColumns(
-    [180, 200, 150, 250, 120, 100, 100, 150], // Initial widths in pixels
-    'candidates-column-widths'
+    [SELECT_COL, 180, 200, 150, 250, 120, 100, 100, 150],
+    'candidates-column-widths-v2'
   );
 
   // Debounce URL updates to prevent page refresh on every keystroke
@@ -313,7 +334,7 @@ const Candidates = () => {
     urlUpdateTimeout.current = setTimeout(() => {
       const newParams = new URLSearchParams();
       if (filterConditions.length > 0 && filterConditions.some(f => f.field && f.value)) {
-        newParams.set('query', encodeURIComponent(JSON.stringify(filterConditions)));
+        newParams.set('query', JSON.stringify(filterConditions));
       }
       setSearchParams(newParams, { replace: true });
     }, 500);
@@ -465,8 +486,8 @@ const Candidates = () => {
         aValue = a.match_count || 0;
         bValue = b.match_count || 0;
       } else if (sortColumn === 'status') {
-        aValue = a.is_active === 1 || a.is_active === true ? 'Active' : 'Inactive';
-        bValue = b.is_active === 1 || b.is_active === true ? 'Active' : 'Inactive';
+        aValue = isActiveStatus(a.is_active) ? 'Active' : 'Inactive';
+        bValue = isActiveStatus(b.is_active) ? 'Active' : 'Inactive';
       }
       
       // Handle null/undefined values
@@ -486,6 +507,69 @@ const Candidates = () => {
       return sortDirection === 'asc' ? comparison : -comparison;
     });
   }, [candidates, sortColumn, sortDirection]);
+
+  const isStaff = user?.role === 'consultant' || user?.role === 'admin';
+  const isAdmin = user?.role === 'admin';
+  const candidateList = sortedCandidates || [];
+
+  const {
+    selectedItems,
+    selectedCount,
+    allSelected,
+    someSelected,
+    toggleOne,
+    toggleAll,
+    clearSelection,
+    isSelected,
+  } = useBulkSelection(candidateList);
+
+  const handleBulkExport = () => {
+    downloadCsv(selectedItems, CANDIDATE_EXPORT_COLUMNS, `candidates-export-${Date.now()}.csv`);
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Deactivate ${selectedCount} candidate(s)? They will be soft-deleted (marked inactive).`)) return;
+    setBulkBusy(true);
+    setBulkAction('delete');
+    try {
+      await Promise.all(
+        selectedItems.map((candidate) =>
+          api.put(`/candidates/${candidate.id}/status`, { is_active: false })
+        )
+      );
+      queryClient.invalidateQueries(['candidates', user?.role]);
+      clearSelection();
+    } catch (e) {
+      window.alert(e.response?.data?.error || e.message);
+    } finally {
+      setBulkBusy(false);
+      setBulkAction(null);
+    }
+  };
+
+  const handleBulkMatch = async () => {
+    if (!window.confirm(`Run AI matching for ${selectedCount} candidate(s) against all active jobs?`)) return;
+    setBulkBusy(true);
+    setBulkAction('match');
+    try {
+      const results = await Promise.all(
+        selectedItems.map((candidate) =>
+          api.post(`/matches/ai-recompute-candidate/${candidate.id}`).then((res) => res.data)
+        )
+      );
+      const upserted = results.reduce((sum, r) => sum + (r.upserted || 0), 0);
+      const removed = results.reduce((sum, r) => sum + (r.below_threshold_removed || 0), 0);
+      queryClient.invalidateQueries(['candidates', user?.role]);
+      queryClient.invalidateQueries('all-matches');
+      window.alert(`AI matching finished: ${upserted} pairs saved, ${removed} below threshold removed.`);
+      clearSelection();
+    } catch (e) {
+      window.alert(e.response?.data?.error || e.message);
+    } finally {
+      setBulkBusy(false);
+      setBulkAction(null);
+    }
+  };
 
   const handleSaveAsKpi = () => {
     if (!kpiName.trim()) {
@@ -576,9 +660,7 @@ const Candidates = () => {
           formData.append('education', resume.education || '');
           formData.append('summary', resume.summary || '');
 
-          await api.post(`/resumes/upload-for-candidate/${userId}`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          });
+          await api.post(`/resumes/upload-for-candidate/${userId}`, formData);
         } else if (resume.id && !resume.file) {
           // Update existing resume metadata only
           await api.put(`/resumes/${resume.id}`, {
@@ -596,9 +678,7 @@ const Candidates = () => {
           formData.append('education', resume.education || '');
           formData.append('summary', resume.summary || '');
 
-          await api.post(`/resumes/upload-for-candidate/${userId}`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          });
+          await api.post(`/resumes/upload-for-candidate/${userId}`, formData);
         }
       }
 
@@ -676,9 +756,7 @@ const Candidates = () => {
             formData.append('education', resume.education || '');
             formData.append('summary', resume.summary || '');
 
-            await api.post(`/resumes/upload-for-candidate/${userId}`, formData, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-            });
+            await api.post(`/resumes/upload-for-candidate/${userId}`, formData);
           }
         }
       }
@@ -849,27 +927,28 @@ const Candidates = () => {
     <div className="candidates-page list-page">
       <div className="page-header">
         <h1>{user?.role === 'admin' ? 'All Candidates' : 'Assigned Candidates'}</h1>
-        <div className="list-page-header-actions">
-          <button
-            type="button"
-            className="btn btn-secondary"
+        <div className="list-page-header-actions page-toolbar">
+          <IconButton
+            icon={FiFilter}
+            label={showFilters ? 'Hide filters' : 'Show filters'}
+            active={showFilters}
             onClick={() => setShowFilters(!showFilters)}
-          >
-            <FiFilter /> {showFilters ? 'Hide' : 'Show'} filters
-          </button>
+          />
           {hasActiveFilters && (
-            <button
-              type="button"
-              className="btn btn-primary"
+            <IconButton
+              icon={FiSave}
+              label="Save as KPI"
+              variant="primary"
               onClick={() => setShowSaveKpiModal(true)}
-            >
-              <FiSave /> Save as KPI
-            </button>
+            />
           )}
           {user?.role === 'admin' && (
-            <button type="button" className="btn btn-primary" onClick={() => setShowAddMethodModal(true)}>
-              <FiPlus /> Add Candidate
-            </button>
+            <IconButton
+              icon={FiPlus}
+              label="Add candidate"
+              variant="primary"
+              onClick={() => setShowAddMethodModal(true)}
+            />
           )}
         </div>
       </div>
@@ -1047,30 +1126,42 @@ const Candidates = () => {
         </div>
       )}
 
+      <BulkActionBar
+        count={selectedCount}
+        onClear={clearSelection}
+        onExport={handleBulkExport}
+        onDelete={isAdmin ? handleBulkDelete : undefined}
+        onMatch={isStaff ? handleBulkMatch : undefined}
+        showDelete={isAdmin}
+        showMatch={isStaff}
+        busy={bulkBusy}
+        busyAction={bulkAction}
+      />
+
       <div className="candidates-table-container">
         <table ref={tableRef} className="table candidates-table" style={{ tableLayout: 'fixed', width: '100%' }}>
           <thead>
             <tr>
-              <th 
-                {...getColumnProps(0)}
-                className="sortable" 
-                onClick={() => handleSort('name')}
-                style={{ ...getColumnProps(0).style, cursor: 'pointer' }}
-              >
-                Name
-                {sortColumn === 'name' && (
-                  sortDirection === 'asc' ? <FiArrowUp style={{ marginLeft: '5px', display: 'inline' }} /> : <FiArrowDown style={{ marginLeft: '5px', display: 'inline' }} />
-                )}
-                <ResizeHandle index={0} />
+              <th {...getColumnProps(0)} className="list-select-cell">
+                <input
+                  type="checkbox"
+                  aria-label="Select all candidates"
+                  checked={allSelected && candidateList.length > 0}
+                  ref={(el) => {
+                    if (el) el.indeterminate = someSelected && !allSelected;
+                  }}
+                  onChange={toggleAll}
+                  onClick={(e) => e.stopPropagation()}
+                />
               </th>
               <th 
                 {...getColumnProps(1)}
                 className="sortable" 
-                onClick={() => handleSort('email')}
+                onClick={() => handleSort('name')}
                 style={{ ...getColumnProps(1).style, cursor: 'pointer' }}
               >
-                Email
-                {sortColumn === 'email' && (
+                Name
+                {sortColumn === 'name' && (
                   sortDirection === 'asc' ? <FiArrowUp style={{ marginLeft: '5px', display: 'inline' }} /> : <FiArrowDown style={{ marginLeft: '5px', display: 'inline' }} />
                 )}
                 <ResizeHandle index={1} />
@@ -1078,11 +1169,11 @@ const Candidates = () => {
               <th 
                 {...getColumnProps(2)}
                 className="sortable" 
-                onClick={() => handleSort('phone')}
+                onClick={() => handleSort('email')}
                 style={{ ...getColumnProps(2).style, cursor: 'pointer' }}
               >
-                Phone
-                {sortColumn === 'phone' && (
+                Email
+                {sortColumn === 'email' && (
                   sortDirection === 'asc' ? <FiArrowUp style={{ marginLeft: '5px', display: 'inline' }} /> : <FiArrowDown style={{ marginLeft: '5px', display: 'inline' }} />
                 )}
                 <ResizeHandle index={2} />
@@ -1090,11 +1181,11 @@ const Candidates = () => {
               <th 
                 {...getColumnProps(3)}
                 className="sortable" 
-                onClick={() => handleSort('current_position')}
+                onClick={() => handleSort('phone')}
                 style={{ ...getColumnProps(3).style, cursor: 'pointer' }}
               >
-                Current Position
-                {sortColumn === 'current_position' && (
+                Phone
+                {sortColumn === 'phone' && (
                   sortDirection === 'asc' ? <FiArrowUp style={{ marginLeft: '5px', display: 'inline' }} /> : <FiArrowDown style={{ marginLeft: '5px', display: 'inline' }} />
                 )}
                 <ResizeHandle index={3} />
@@ -1102,11 +1193,11 @@ const Candidates = () => {
               <th 
                 {...getColumnProps(4)}
                 className="sortable" 
-                onClick={() => handleSort('experience')}
+                onClick={() => handleSort('current_position')}
                 style={{ ...getColumnProps(4).style, cursor: 'pointer' }}
               >
-                Experience
-                {sortColumn === 'experience' && (
+                Current Position
+                {sortColumn === 'current_position' && (
                   sortDirection === 'asc' ? <FiArrowUp style={{ marginLeft: '5px', display: 'inline' }} /> : <FiArrowDown style={{ marginLeft: '5px', display: 'inline' }} />
                 )}
                 <ResizeHandle index={4} />
@@ -1114,11 +1205,11 @@ const Candidates = () => {
               <th 
                 {...getColumnProps(5)}
                 className="sortable" 
-                onClick={() => handleSort('resumes')}
+                onClick={() => handleSort('experience')}
                 style={{ ...getColumnProps(5).style, cursor: 'pointer' }}
               >
-                Resumes
-                {sortColumn === 'resumes' && (
+                Experience
+                {sortColumn === 'experience' && (
                   sortDirection === 'asc' ? <FiArrowUp style={{ marginLeft: '5px', display: 'inline' }} /> : <FiArrowDown style={{ marginLeft: '5px', display: 'inline' }} />
                 )}
                 <ResizeHandle index={5} />
@@ -1126,11 +1217,11 @@ const Candidates = () => {
               <th 
                 {...getColumnProps(6)}
                 className="sortable" 
-                onClick={() => handleSort('matches')}
+                onClick={() => handleSort('resumes')}
                 style={{ ...getColumnProps(6).style, cursor: 'pointer' }}
               >
-                Matches
-                {sortColumn === 'matches' && (
+                Resumes
+                {sortColumn === 'resumes' && (
                   sortDirection === 'asc' ? <FiArrowUp style={{ marginLeft: '5px', display: 'inline' }} /> : <FiArrowDown style={{ marginLeft: '5px', display: 'inline' }} />
                 )}
                 <ResizeHandle index={6} />
@@ -1138,25 +1229,45 @@ const Candidates = () => {
               <th 
                 {...getColumnProps(7)}
                 className="sortable" 
-                onClick={() => handleSort('status')}
+                onClick={() => handleSort('matches')}
                 style={{ ...getColumnProps(7).style, cursor: 'pointer' }}
+              >
+                Matches
+                {sortColumn === 'matches' && (
+                  sortDirection === 'asc' ? <FiArrowUp style={{ marginLeft: '5px', display: 'inline' }} /> : <FiArrowDown style={{ marginLeft: '5px', display: 'inline' }} />
+                )}
+                <ResizeHandle index={7} />
+              </th>
+              <th 
+                {...getColumnProps(8)}
+                className="sortable" 
+                onClick={() => handleSort('status')}
+                style={{ ...getColumnProps(8).style, cursor: 'pointer' }}
               >
                 Status
                 {sortColumn === 'status' && (
                   sortDirection === 'asc' ? <FiArrowUp style={{ marginLeft: '5px', display: 'inline' }} /> : <FiArrowDown style={{ marginLeft: '5px', display: 'inline' }} />
                 )}
-                <ResizeHandle index={7} />
+                <ResizeHandle index={8} />
               </th>
             </tr>
           </thead>
           <tbody>
-            {sortedCandidates && sortedCandidates.length > 0 ? (
-              sortedCandidates.map((candidate) => (
+            {candidateList.length > 0 ? (
+              candidateList.map((candidate) => (
                 <tr 
                   key={candidate.id} 
-                  className="candidate-row"
+                  className={`candidate-row${isSelected(candidate.id) ? ' row-selected' : ''}`}
                   onClick={() => handleCandidateClick(candidate)}
                 >
+                  <td className="list-select-cell" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${candidate.first_name} ${candidate.last_name}`}
+                      checked={isSelected(candidate.id)}
+                      onChange={() => toggleOne(candidate.id)}
+                    />
+                  </td>
                   <td>
                     <div className="candidate-name-cell">
                       <FiUser className="candidate-icon" />
@@ -1222,7 +1333,7 @@ const Candidates = () => {
                         <>
                           <select
                             className="status-select"
-                            value={candidate.is_active ? 'active' : 'inactive'}
+                            value={isActiveStatus(candidate.is_active) ? 'active' : 'inactive'}
                             onChange={(e) => {
                               const newStatus = e.target.value === 'active';
                               updateStatusMutation.mutate({
@@ -1237,8 +1348,8 @@ const Candidates = () => {
                               border: '1px solid #ddd',
                               cursor: 'pointer',
                               fontSize: '14px',
-                              backgroundColor: candidate.is_active ? '#d4edda' : '#f8d7da',
-                              color: candidate.is_active ? '#155724' : '#721c24'
+                              backgroundColor: isActiveStatus(candidate.is_active) ? '#d4edda' : '#f8d7da',
+                              color: isActiveStatus(candidate.is_active) ? '#155724' : '#721c24'
                             }}
                           >
                             <option value="active">Active</option>
@@ -1266,7 +1377,7 @@ const Candidates = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="8" className="empty-state">
+                <td colSpan="9" className="empty-state">
                   {user?.role === 'admin' ? 'No candidates found' : 'No candidates assigned'}
                 </td>
               </tr>

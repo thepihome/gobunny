@@ -1,18 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { FiMenu, FiX, FiHome, FiBriefcase, FiFileText, FiUsers, FiClock, FiDatabase, FiSettings, FiLogOut, FiLayers, FiUserCheck } from 'react-icons/fi';
+import {
+  FiMenu,
+  FiX,
+  FiHome,
+  FiBriefcase,
+  FiFileText,
+  FiUsers,
+  FiClock,
+  FiDatabase,
+  FiSettings,
+  FiLayers,
+  FiUserCheck,
+  FiChevronsLeft,
+  FiChevronsRight,
+} from 'react-icons/fi';
 import { APP_UI_VERSION } from '../version';
 import NotificationBell from './NotificationBell';
-import ThemeToggle from './ThemeToggle';
+import BrandLogo from './BrandLogo';
+import UserMenu from './UserMenu';
+import { PageTransition, MotionSidebarItem } from './motion';
 import './Layout.css';
+
+const SIDEBAR_COLLAPSED_KEY = 'gobunny-sidebar-collapsed';
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, sidebarCollapsed ? '1' : '0');
+    } catch {
+      /* ignore */
+    }
+  }, [sidebarCollapsed]);
 
   const handleLogout = () => {
     logout();
@@ -22,7 +55,7 @@ const Layout = ({ children }) => {
   const menuItems = [
     { path: '/', label: 'Dashboard', icon: FiHome, roles: ['candidate', 'consultant', 'admin'], permission: 'tab_dashboard' },
     { path: '/jobs', label: 'Jobs', icon: FiBriefcase, roles: ['candidate', 'consultant', 'admin'], permission: 'tab_jobs' },
-    { path: '/resumes', label: 'My Resumes', icon: FiFileText, roles: ['candidate'], permission: 'tab_resumes' },
+    { path: '/resumes', label: 'Resume Studio', icon: FiFileText, roles: ['candidate'], permission: 'tab_resumes' },
     { path: '/matches', label: 'Matches', icon: FiFileText, roles: ['candidate', 'consultant', 'admin'], permission: 'tab_matches' },
     { path: '/candidates', label: 'Candidates', icon: FiUsers, roles: ['consultant', 'admin'], permission: 'tab_candidates' },
     { path: '/timesheets', label: 'Timesheets', icon: FiClock, roles: ['consultant', 'admin'], permission: 'tab_timesheets' },
@@ -37,29 +70,18 @@ const Layout = ({ children }) => {
   const filteredMenuItems = menuItems.filter(item => item.roles.includes(user?.role));
 
   return (
-    <div className="layout">
-      <nav className="navbar">
+    <div className={`layout ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
+      <nav className="navbar layer-front">
         <div className="navbar-content">
           <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
             {sidebarOpen ? <FiX /> : <FiMenu />}
           </button>
-          <Link to="/" className="navbar-brand" onClick={() => setSidebarOpen(false)}>
-            <span className="brand-mark" aria-hidden="true">GB</span>
-            <span className="brand-text">
-              <span className="brand-name">GoBunny</span>
-              <span className="brand-tagline">Platform</span>
-            </span>
+          <Link to="/" className="navbar-brand" onClick={() => setSidebarOpen(false)} aria-label="GoDash by GoBunnyy home">
+            <BrandLogo variant="navbar" />
           </Link>
           <div className="navbar-trailing">
-            <ThemeToggle compact />
             <NotificationBell />
-            <div className="navbar-user">
-              <span>{user?.first_name} {user?.last_name}</span>
-              <span className="navbar-role">{user?.role}</span>
-              <button onClick={handleLogout} className="btn-logout">
-                <FiLogOut /> Logout
-              </button>
-            </div>
+            <UserMenu onLogout={handleLogout} />
           </div>
         </div>
       </nav>
@@ -79,30 +101,50 @@ const Layout = ({ children }) => {
             />
           )}
         </AnimatePresence>
-        <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <aside className={`sidebar layer-mid ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
+          <div className="sidebar-header">
+            <button
+              type="button"
+              className="sidebar-collapse-toggle"
+              onClick={() => setSidebarCollapsed((c) => !c)}
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {sidebarCollapsed ? <FiChevronsRight /> : <FiChevronsLeft />}
+            </button>
+          </div>
           <nav className="sidebar-nav">
-            {filteredMenuItems.map((item) => {
+            {filteredMenuItems.map((item, index) => {
               const Icon = item.icon;
-              const isActive = location.pathname === item.path || 
+              const isActive = location.pathname === item.path ||
                 (item.path !== '/' && location.pathname.startsWith(item.path));
-              
               return (
-                <Link
+                <MotionSidebarItem
                   key={item.path}
-                  to={item.path}
-                  className={`sidebar-item ${isActive ? 'active' : ''}`}
-                  onClick={() => setSidebarOpen(false)}
+                  className="sidebar-item-wrap"
+                  isActive={isActive}
+                  delay={index * 0.04}
                 >
-                  <Icon />
-                  <span>{item.label}</span>
-                </Link>
+                  <Link
+                    to={item.path}
+                    className={`sidebar-item ${isActive ? 'active' : ''}`}
+                    title={item.label}
+                    aria-label={item.label}
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <Icon aria-hidden="true" />
+                    <span className="sidebar-item-label">{item.label}</span>
+                  </Link>
+                </MotionSidebarItem>
               );
             })}
           </nav>
         </aside>
 
-        <main className="main-content">
-          {children}
+        <main className="main-content layer-recess">
+          <div className="page-stage">
+            <PageTransition>{children}</PageTransition>
+          </div>
           <div
             className="layout-build-stamp"
             title="If this version does not change after deploy, the browser or CDN is still serving an old index.html or bundle."

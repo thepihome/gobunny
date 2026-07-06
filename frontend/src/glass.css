@@ -1,0 +1,481 @@
+/**
+ * Global frosted-glass layer — import LAST (after App.css + page CSS).
+ * Keeps brand colors; adds visible translucency + backdrop blur.
+ */
+
+:root {
+  --glass-blur: 24px;
+  --glass-blur-sm: 14px;
+  --glass-blur-nav: 32px;
+  --glass-saturate: 1.45;
+
+  --glass-bg: rgba(255, 255, 255, 0.5);
+  --glass-bg-strong: rgba(255, 255, 255, 0.62);
+  --glass-bg-muted: rgba(255, 255, 255, 0.38);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.28);
+
+  --glass-border-outer: rgba(255, 255, 255, 0.55);
+  --glass-border-inner: rgba(255, 255, 255, 0.85);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --glass-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.05),
+    0 2px 8px rgba(15, 23, 42, 0.06),
+    0 8px 32px rgba(15, 23, 42, 0.08);
+
+  --surface-color: var(--glass-bg-strong);
+  --surface-muted: var(--glass-bg-muted);
+  --surface-elevated: rgba(255, 255, 255, 0.72);
+
+  --glass-panel-bg: var(--glass-bg-strong);
+  --glass-sidebar-bg: rgba(255, 255, 255, 0.52);
+  --glass-filter-bg: var(--glass-bg-muted);
+  --glass-table-header: rgba(248, 250, 252, 0.55);
+  --surface-hover: color-mix(in srgb, var(--primary-color) 6%, var(--glass-bg-muted));
+}
+
+[data-theme='dark'] {
+  --glass-bg: rgba(30, 41, 59, 0.55);
+  --glass-bg-strong: rgba(30, 41, 59, 0.68);
+  --glass-bg-muted: rgba(15, 23, 42, 0.48);
+  --glass-bg-subtle: rgba(30, 41, 59, 0.35);
+
+  --glass-border-outer: rgba(255, 255, 255, 0.1);
+  --glass-border-inner: rgba(255, 255, 255, 0.06);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --glass-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 4px 16px rgba(0, 0, 0, 0.25),
+    0 8px 32px rgba(0, 0, 0, 0.2);
+
+  --surface-color: var(--glass-bg-strong);
+  --surface-muted: var(--glass-bg-muted);
+  --surface-elevated: rgba(30, 41, 59, 0.75);
+  --surface-hover: color-mix(in srgb, var(--primary-color) 10%, var(--glass-bg-muted));
+  --glass-sidebar-bg: rgba(15, 23, 42, 0.58);
+  --glass-table-header: rgba(15, 23, 42, 0.55);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --glass-bg: rgba(30, 41, 59, 0.55);
+    --glass-bg-strong: rgba(30, 41, 59, 0.68);
+    --glass-bg-muted: rgba(15, 23, 42, 0.48);
+    --glass-border-outer: rgba(255, 255, 255, 0.1);
+    --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    --surface-color: var(--glass-bg-strong);
+    --surface-muted: var(--glass-bg-muted);
+    --glass-sidebar-bg: rgba(15, 23, 42, 0.58);
+  }
+}
+
+/* ── Primary surfaces ── */
+.navbar {
+  background: var(--glass-sidebar-bg) !important;
+  backdrop-filter: blur(var(--glass-blur-nav)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-nav)) saturate(var(--glass-saturate));
+  border-bottom: 1px solid var(--glass-border-outer) !important;
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+}
+
+.sidebar {
+  background: var(--glass-sidebar-bg) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border-right-color: var(--glass-border-outer) !important;
+  box-shadow: var(--glass-shadow);
+}
+
+.card,
+.dashboard-panel,
+.kpi-card,
+.chart-card,
+.summary-chip,
+.quick-action-card,
+.list-filters-panel,
+.modal-content,
+.table,
+.jobs-table-container,
+.candidates-table-container,
+.users-table-container,
+.roles-table-container,
+.settings-container,
+.group-card,
+.crm-stat-card,
+.crm-insights.glass-surface,
+.auth-card,
+.empty-state,
+.groups-list,
+.detail-section,
+.form-section,
+.help-section,
+.theme-card,
+.member-item,
+.user-item-modal,
+.permission-item {
+  background: var(--glass-bg-strong) !important;
+  backdrop-filter: blur(var(--glass-blur-sm)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border-outer) !important;
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+}
+
+.dashboard-tabs,
+.settings-sidebar,
+.crm-view-toggle,
+.settings-section {
+  background: var(--glass-bg-muted) !important;
+  backdrop-filter: blur(var(--glass-blur-sm)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border-outer) !important;
+  box-shadow: var(--glass-highlight);
+}
+
+.table th {
+  background: var(--glass-table-header) !important;
+  backdrop-filter: blur(var(--glass-blur-sm)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm)) saturate(var(--glass-saturate));
+}
+
+.table tbody tr:hover td {
+  background: var(--glass-bg-muted) !important;
+}
+
+/* ── Navigation highlights ── */
+.sidebar-item-wrap:hover .sidebar-item:not(.active),
+.sidebar-item:not(.active):hover {
+  background: var(--surface-hover) !important;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.sidebar-item-wrap:hover .sidebar-item.active,
+.sidebar-item.active:hover {
+  background: color-mix(in srgb, var(--primary-color) 14%, transparent) !important;
+  border-left-color: var(--primary-color) !important;
+}
+
+.sidebar-item.active {
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent) !important;
+  border-left-color: var(--primary-color) !important;
+  box-shadow: none;
+}
+
+.settings-tab.active {
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 22%, transparent);
+}
+
+.crm-pipeline-chip--active {
+  background: color-mix(in srgb, var(--primary-color) 16%, transparent) !important;
+  border-color: color-mix(in srgb, var(--primary-color) 35%, transparent) !important;
+  box-shadow: var(--glass-highlight);
+  backdrop-filter: blur(8px) saturate(1.2);
+  -webkit-backdrop-filter: blur(8px) saturate(1.2);
+}
+
+.page-eyebrow {
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 22%, transparent);
+  box-shadow: var(--glass-highlight);
+  backdrop-filter: blur(8px) saturate(1.2);
+  -webkit-backdrop-filter: blur(8px) saturate(1.2);
+}
+
+.badge {
+  backdrop-filter: blur(8px) saturate(1.2);
+  -webkit-backdrop-filter: blur(8px) saturate(1.2);
+  box-shadow: var(--glass-highlight);
+}
+
+.badge-success {
+  background: color-mix(in srgb, var(--success-color) 18%, transparent) !important;
+  border-color: color-mix(in srgb, var(--success-color) 30%, transparent) !important;
+}
+
+.badge-warning {
+  background: color-mix(in srgb, var(--warning-color) 18%, transparent) !important;
+  border-color: color-mix(in srgb, var(--warning-color) 30%, transparent) !important;
+}
+
+.badge-danger {
+  background: color-mix(in srgb, var(--error-color) 18%, transparent) !important;
+  border-color: color-mix(in srgb, var(--error-color) 30%, transparent) !important;
+}
+
+.badge-info {
+  background: color-mix(in srgb, var(--info-color) 18%, transparent) !important;
+  border-color: color-mix(in srgb, var(--info-color) 30%, transparent) !important;
+}
+
+.menu-toggle,
+.sidebar-collapse-toggle,
+.theme-toggle {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border-outer) !important;
+  box-shadow: var(--glass-highlight);
+  backdrop-filter: blur(10px) saturate(1.2);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
+}
+
+.menu-toggle:hover,
+.sidebar-collapse-toggle:hover {
+  background: var(--glass-bg-strong) !important;
+}
+
+.theme-toggle-option.active {
+  background: color-mix(in srgb, var(--primary-color) 85%, transparent) !important;
+  box-shadow: var(--glass-highlight), 0 2px 8px color-mix(in srgb, var(--primary-color) 30%, transparent);
+}
+
+/* ── Form controls ── */
+.form-group input,
+.form-group select,
+.form-group textarea,
+.list-filters-panel .filter-group input,
+.list-filters-panel .filter-group select,
+.list-filter-input-icon {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border-outer) !important;
+  box-shadow: var(--glass-highlight);
+  backdrop-filter: blur(8px) saturate(1.15);
+  -webkit-backdrop-filter: blur(8px) saturate(1.15);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus,
+.list-filters-panel .filter-group input:focus,
+.list-filters-panel .filter-group select:focus {
+  background: var(--glass-bg-strong) !important;
+  border-color: color-mix(in srgb, var(--primary-color) 45%, var(--glass-border-outer)) !important;
+  box-shadow: var(--glass-highlight), 0 0 0 3px color-mix(in srgb, var(--primary-color) 12%, transparent);
+}
+
+/* ── Modals & overlays ── */
+.modal-overlay {
+  background: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(6px) saturate(1.15);
+  -webkit-backdrop-filter: blur(6px) saturate(1.15);
+  z-index: 1100 !important;
+}
+
+.sidebar-backdrop {
+  backdrop-filter: blur(6px) saturate(1.1);
+  -webkit-backdrop-filter: blur(6px) saturate(1.1);
+}
+
+.settings-tab {
+  background: transparent !important;
+}
+
+.settings-tab:hover {
+  background: var(--glass-bg-muted) !important;
+  backdrop-filter: blur(8px) saturate(1.15);
+  -webkit-backdrop-filter: blur(8px) saturate(1.15);
+}
+
+.chart-tooltip {
+  background: var(--glass-bg-strong) !important;
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+}
+
+[data-navbar-style='dark'] .navbar {
+  background: rgba(15, 23, 42, 0.62) !important;
+}
+
+[data-navbar-style='dark'] .menu-toggle,
+[data-navbar-style='dark'] .theme-toggle {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* ── Page-specific surfaces (override hardcoded whites in page CSS) ── */
+.candidate-info,
+.candidate-section,
+.candidate-card,
+.metadata-card,
+.metadata-section,
+.resumes-header,
+.resumes-list-container,
+.matches-list-item,
+.job-details-card,
+.job-details-section,
+.timesheet-entry,
+.timesheet-summary,
+.crm-contact-card,
+.crm-deal-card,
+.crm-kanban-column,
+.users-stat-card,
+.detail-card,
+.detail-section-card,
+.info-panel,
+.tab-panel,
+.filter-bar,
+.register-form-container,
+.candidates-table-container,
+.jobs-table-container,
+.users-table-container,
+.roles-table-container,
+.resume-studio-panel,
+.resume-studio-sidebar,
+.studio-section,
+.score-card,
+.suggestion-card {
+  background: var(--glass-bg-strong) !important;
+  backdrop-filter: blur(var(--glass-blur-sm)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border-outer) !important;
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+}
+
+.resume-item,
+.match-item,
+.crm-item,
+.profile-item,
+.profile-empty-state,
+.member-row,
+.permission-row,
+.settings-row,
+.metadata-row,
+.timesheet-row,
+.candidate-tag,
+.role-badge-chip,
+.job-tag,
+.user-avatar-placeholder,
+.candidates-table th.sortable:hover,
+.jobs-table th.sortable:hover {
+  background: var(--glass-bg-muted) !important;
+  backdrop-filter: blur(8px) saturate(1.15);
+  -webkit-backdrop-filter: blur(8px) saturate(1.15);
+}
+
+.settings-tab:hover,
+.dashboard-tab:hover:not(.active),
+.crm-pipeline-chip:hover:not(.crm-pipeline-chip--active),
+.crm-view-toggle button:hover:not(.active) {
+  background: var(--surface-hover) !important;
+}
+
+/* ── Navbar top-right: solid controls (no glass) ── */
+.notification-bell-btn {
+  background: var(--chrome-btn-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+.notification-bell-btn:hover {
+  background: var(--chrome-panel-hover) !important;
+}
+
+.notification-bell-btn.has-unread {
+  background: #e8eef8 !important;
+  border-color: color-mix(in srgb, var(--primary-color) 35%, var(--border-color)) !important;
+}
+
+.user-menu-trigger {
+  background: transparent !important;
+  border: 2px solid transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+.user-menu-trigger:hover,
+.user-menu-trigger.is-open,
+.user-menu-trigger[aria-expanded='true'] {
+  background: transparent !important;
+  border-color: color-mix(in srgb, var(--primary-color) 35%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 12%, transparent) !important;
+}
+
+.notification-panel,
+.user-menu-panel {
+  background: var(--chrome-panel-bg) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.user-menu-info {
+  background: var(--chrome-panel-muted) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.user-menu-item:hover,
+.user-menu-item:focus-visible {
+  background: var(--chrome-panel-hover) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.notification-item:hover {
+  background: var(--chrome-panel-hover) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.user-menu-wrap .theme-toggle {
+  background: var(--chrome-btn-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+.user-menu-wrap .theme-toggle-option.active {
+  background: var(--primary-color) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--primary-color) 40%, transparent) !important;
+}
+
+[data-theme='dark'] .notification-bell-btn {
+  background: var(--chrome-btn-bg) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+[data-theme='dark'] .notification-bell-btn:hover {
+  background: var(--chrome-panel-hover) !important;
+}
+
+[data-theme='dark'] .notification-bell-btn.has-unread {
+  background: color-mix(in srgb, var(--primary-color) 25%, transparent) !important;
+  border-color: color-mix(in srgb, var(--primary-color) 45%, transparent) !important;
+}
+
+[data-theme='dark'] .user-menu-wrap .theme-toggle-option.active {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .notification-bell-btn {
+    background: var(--chrome-btn-bg) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    color: #fff !important;
+  }
+
+  :root:not([data-theme='light']) .notification-bell-btn:hover {
+    background: var(--chrome-panel-hover) !important;
+  }
+
+  :root:not([data-theme='light']) .user-menu-wrap .theme-toggle-option.active {
+    background: rgba(255, 255, 255, 0.2) !important;
+  }
+}
+
+[data-navbar-style='dark'] .notification-bell-btn {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-navbar-style='dark'] .notification-bell-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+}

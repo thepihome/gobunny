@@ -120,22 +120,37 @@ install_deps() {
 
 ensure_backend_dev_vars() {
   local vars_file="$BACKEND/.dev.vars"
-  if [[ -f "$vars_file" ]]; then
-    return
-  fi
+  local default_secret="local-dev-scanner-secret-change-in-production"
+  local scanner_port="${SCANNER_PORT:-8790}"
 
-  log "Creating $vars_file for local wrangler dev..."
-  cat >"$vars_file" <<EOF
+  if [[ ! -f "$vars_file" ]]; then
+    log "Creating $vars_file for local wrangler dev..."
+    cat >"$vars_file" <<EOF
 JWT_SECRET=local-dev-jwt-secret-change-in-production
 JWT_EXPIRE=7d
 FRONTEND_URL=http://localhost:${FRONTEND_PORT}
 FRONTEND_URLS=http://localhost:${FRONTEND_PORT}
-SCANNER_SERVICE_URL=http://localhost:8790
-SCANNER_SECRET=local-dev-scanner-secret-change-in-production
+SCANNER_SERVICE_URL=http://localhost:${scanner_port}
+SCANNER_SECRET=${default_secret}
 # Required for Google sign-in — set your OAuth Web client ID:
 # GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 EOF
-  warn "Add GOOGLE_CLIENT_ID to $vars_file for Google login to work locally."
+    warn "Add GOOGLE_CLIENT_ID to $vars_file for Google login to work locally."
+    return
+  fi
+
+  local patched=0
+  if ! grep -q '^SCANNER_SECRET=' "$vars_file" 2>/dev/null; then
+    echo "SCANNER_SECRET=${default_secret}" >>"$vars_file"
+    patched=1
+  fi
+  if ! grep -q '^SCANNER_SERVICE_URL=' "$vars_file" 2>/dev/null; then
+    echo "SCANNER_SERVICE_URL=http://localhost:${scanner_port}" >>"$vars_file"
+    patched=1
+  fi
+  if [[ "$patched" -eq 1 ]]; then
+    warn "Added scanner vars to $vars_file — restart wrangler dev if it is already running."
+  fi
 }
 
 ensure_frontend_env() {
@@ -205,8 +220,44 @@ migrate_local_d1() {
         --local \
         --env dev \
         --file=./database/migrations/scanner_d1.sql \
-        2>/dev/null || warn "Scanner migration skipped (tables/columns may already exist)."
+        2>/dev/null || warn "Scanner migration skipped (tables may already exist)."
     )
+    local scanner_cols="$BACKEND/database/migrations/scanner_d1_jobs_columns.sql"
+    if [[ -f "$scanner_cols" ]]; then
+      log "Applying job scanner column migration (one-time, OK if already applied)..."
+      (
+        cd "$BACKEND"
+        npx --yes wrangler@3 d1 execute godashdevcore01 \
+          --local \
+          --env dev \
+          --file=./database/migrations/scanner_d1_jobs_columns.sql \
+          2>/dev/null || warn "Scanner jobs columns already exist — skipped."
+      )
+    fi
+  fi
+
+  local listing_migrate="$BACKEND/database/migrations/job_listing_type_d1.sql"
+  if [[ -f "$listing_migrate" ]]; then
+    log "Applying job listing type migration..."
+    (
+      cd "$BACKEND"
+      npx --yes wrangler@3 d1 execute godashdevcore01 \
+        --local \
+        --env dev \
+        --file=./database/migrations/job_listing_type_d1.sql \
+        2>/dev/null || warn "Job listing migration skipped."
+    )
+    local listing_cols="$BACKEND/database/migrations/job_listing_type_columns.sql"
+    if [[ -f "$listing_cols" ]]; then
+      (
+        cd "$BACKEND"
+        npx --yes wrangler@3 d1 execute godashdevcore01 \
+          --local \
+          --env dev \
+          --file=./database/migrations/job_listing_type_columns.sql \
+          2>/dev/null || warn "Job listing_type column already exists — skipped."
+      )
+    fi
   fi
 }
 
@@ -251,14 +302,31 @@ wait_for_backend() {
 
 ensure_scanner_env() {
   local env_file="$SCANNER/.env"
-  if [[ -f "$env_file" ]]; then
+  local vars_file="$BACKEND/.dev.vars"
+  local default_secret="local-dev-scanner-secret-change-in-production"
+  local scanner_port="${SCANNER_PORT:-8790}"
+  local api_url="${GOBUNNY_API_URL:-http://localhost:${BACKEND_PORT}/api}"
+
+  local secret="$default_secret"
+  if [[ -f "$vars_file" ]] && grep -q '^SCANNER_SECRET=' "$vars_file" 2>/dev/null; then
+    secret="$(grep '^SCANNER_SECRET=' "$vars_file" | head -1 | cut -d= -f2-)"
+  fi
+
+  if [[ ! -f "$env_file" ]]; then
+    log "Creating scanner/.env for local scanner service..."
+    cat >"$env_file" <<EOF
+SCANNER_PORT=${scanner_port}
+SCANNER_SECRET=${secret}
+GOBUNNY_API_URL=${api_url}
+CONFIG_POLL_MS=60000
+EOF
     return
   fi
-  if [[ ! -f "$SCANNER/.env.example" ]]; then
-    return
+
+  if ! grep -q '^SCANNER_SECRET=' "$env_file" 2>/dev/null; then
+    echo "SCANNER_SECRET=${secret}" >>"$env_file"
+    warn "Added SCANNER_SECRET to scanner/.env — restart the scanner process."
   fi
-  log "Creating scanner/.env for local scanner service..."
-  cp "$SCANNER/.env.example" "$env_file"
 }
 
 run_scanner() {
@@ -282,6 +350,7 @@ run_servers() {
 
   ensure_backend_dev_vars
   ensure_frontend_env
+  ensure_scanner_env
   migrate_local_d1
 
   trap cleanup EXIT INT TERM

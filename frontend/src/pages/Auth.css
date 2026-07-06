@@ -32,54 +32,27 @@
 .auth-brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: center;
   margin-bottom: 1.75rem;
   position: relative;
   z-index: 1;
 }
 
-.auth-brand .brand-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-md);
-  background: var(--primary-color);
-  color: #fff;
-  font-size: 0.9rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.auth-brand-text h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-heading);
-  letter-spacing: -0.02em;
-  margin: 0;
-  line-height: 1.2;
-}
-
-.auth-brand-text p {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-secondary-color);
-  margin: 0.15rem 0 0;
-}
-
 .auth-card {
-  background: var(--surface-color);
   border-radius: var(--radius-xl);
   padding: 2.25rem 2rem;
   width: 100%;
   max-width: 420px;
-  box-shadow: var(--shadow-lg);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--glass-border-outer);
   position: relative;
   z-index: 1;
+  transition:
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.auth-card:hover {
+  border-color: color-mix(in srgb, var(--primary-color) 20%, var(--glass-border-outer));
 }
 
 .auth-card h2 {

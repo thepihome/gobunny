@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS jobs (
   external_apply_link TEXT,
   source_url TEXT,
   source_provider TEXT,
+  listing_type TEXT DEFAULT 'internal' CHECK (listing_type IN ('internal', 'web', 'external')),
   status TEXT DEFAULT 'active' CHECK (status IN ('active', 'closed', 'draft', 'deleted')),
   posted_by INTEGER REFERENCES users(id),
   created_at TEXT DEFAULT (datetime('now')),
@@ -93,6 +94,9 @@ CREATE TABLE IF NOT EXISTS resumes (
   file_name TEXT,
   file_size INTEGER,
   content_text TEXT,
+  structured_content TEXT,
+  ai_insights TEXT,
+  source_type TEXT DEFAULT 'file' CHECK (source_type IN ('file', 'editor', 'import')),
   skills TEXT, -- JSON array stored as text
   experience_years INTEGER,
   education TEXT,
@@ -289,6 +293,19 @@ CREATE TABLE IF NOT EXISTS scan_runs (
   created_at TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS career_applications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  job_id INTEGER NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  resume_url TEXT,
+  linkedin_url TEXT,
+  message TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_activity_logs_user ON activity_logs(user_id);
@@ -297,8 +314,10 @@ CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON activity_logs(created_at
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_source_url ON jobs(source_url) WHERE source_url IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_jobs_listing_type ON jobs(listing_type);
 CREATE INDEX IF NOT EXISTS idx_scan_sources_enabled ON scan_sources(enabled);
 CREATE INDEX IF NOT EXISTS idx_scan_runs_created ON scan_runs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_career_applications_job ON career_applications(job_id);
 CREATE INDEX IF NOT EXISTS idx_job_matches_candidate ON job_matches(candidate_id);
 CREATE INDEX IF NOT EXISTS idx_job_matches_job ON job_matches(job_id);
 CREATE INDEX IF NOT EXISTS idx_resumes_user ON resumes(user_id);

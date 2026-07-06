@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
@@ -246,7 +247,7 @@ const Settings = () => {
                       <div
                         className="theme-preview"
                         style={{
-                          background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.secondary} 100%)`,
+                          background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.primaryLight || theme.primary} 55%, ${theme.accent || theme.primary} 100%)`,
                         }}
                       >
                         <div className="theme-preview-content">
@@ -292,6 +293,8 @@ const Settings = () => {
 
 // Users Management Component (embedded in Settings)
 const UsersManagement = () => {
+  const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [showUserDetails, setShowUserDetails] = useState(false);
@@ -381,12 +384,33 @@ const UsersManagement = () => {
     {
       onSuccess: () => {
         queryClient.invalidateQueries('users');
+        setShowUserDetails(false);
+        setSelectedUser(null);
+        setIsEditing(false);
+      },
+      onError: (err) => {
+        alert(err.response?.data?.error || err.message || 'Failed to delete user');
       },
     }
   );
 
-  const handleUserClick = (user) => {
-    setSelectedUser(user);
+  const handleDeleteUser = () => {
+    if (!selectedUser) return;
+    if (selectedUser.id === currentUser?.id) {
+      alert('Cannot delete your own account');
+      return;
+    }
+    if (window.confirm(`Are you sure you want to delete ${selectedUser.first_name} ${selectedUser.last_name}?`)) {
+      deleteMutation.mutate(selectedUser.id);
+    }
+  };
+
+  const handleUserClick = (userRow) => {
+    if (userRow.role === 'candidate') {
+      navigate(`/candidates/${userRow.id}`);
+      return;
+    }
+    setSelectedUser(userRow);
     setShowUserDetails(true);
     setIsEditing(false);
   };
@@ -482,7 +506,6 @@ const UsersManagement = () => {
               <th>Role</th>
               <th>Phone</th>
               <th>Status</th>
-              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -507,23 +530,11 @@ const UsersManagement = () => {
                       {user.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => {
-                        if (window.confirm(`Are you sure you want to delete ${user.first_name} ${user.last_name}?`)) {
-                          deleteMutation.mutate(user.id);
-                        }
-                      }}
-                      className="btn btn-danger btn-sm"
-                    >
-                      <FiTrash2 /> Delete
-                    </button>
-                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="empty-state">No users found</td>
+                <td colSpan="5" className="empty-state">No users found</td>
               </tr>
             )}
           </tbody>
@@ -736,7 +747,7 @@ const UsersManagement = () => {
                       )}
                     </div>
 
-                    <div className="modal-actions">
+                    <div className="modal-actions user-detail-modal-actions">
                       <button
                         type="button"
                         className="btn btn-primary"
@@ -754,6 +765,17 @@ const UsersManagement = () => {
                       >
                         Close
                       </button>
+                      {selectedUser.id !== currentUser?.id && (
+                        <button
+                          type="button"
+                          className="btn btn-danger user-detail-delete-btn"
+                          onClick={handleDeleteUser}
+                          disabled={deleteMutation.isLoading}
+                          title="Delete user"
+                        >
+                          <FiTrash2 /> Delete
+                        </button>
+                      )}
                     </div>
                   </div>
                 ) : (

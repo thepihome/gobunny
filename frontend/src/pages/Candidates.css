@@ -19,14 +19,15 @@
 }
 
 .candidates-table th {
-  padding: 16px;
+  padding: var(--space-3) var(--space-4);
   text-align: left;
   font-weight: 600;
-  color: var(--text-color);
-  border-bottom: 2px solid var(--border-light);
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: var(--text-secondary-color);
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--text-sm);
+  text-transform: none;
+  letter-spacing: 0.01em;
+  line-height: 1.4;
 }
 
 .candidates-table th.sortable {
@@ -34,13 +35,14 @@
 }
 
 .candidates-table th.sortable:hover {
-  background-color: #e9ecef;
+  background-color: color-mix(in srgb, var(--primary-color) 8%, var(--glass-table-header));
 }
 
 .candidates-table td {
-  padding: 15px;
-  border-bottom: 1px solid #eee;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-light);
   vertical-align: middle;
+  line-height: 1.45;
 }
 
 .candidate-row {
@@ -49,9 +51,8 @@
 }
 
 .candidate-row:hover {
-  background: color-mix(in srgb, var(--primary-color) 5%, transparent);
-  transform: translateX(4px);
-  box-shadow: inset 4px 0 0 var(--primary-color);
+  background: var(--surface-hover);
+  box-shadow: inset 3px 0 0 var(--primary-color);
 }
 
 .candidate-name-cell {
@@ -66,7 +67,7 @@
 }
 
 .candidate-name-cell strong {
-  color: #333;
+  color: var(--text-heading);
   font-size: 15px;
   transition: color 0.2s;
 }
@@ -91,7 +92,7 @@
 }
 
 .candidate-position strong {
-  color: #333;
+  color: var(--text-heading);
   font-size: 14px;
 }
 
@@ -110,180 +111,30 @@
   border: 1px solid color-mix(in srgb, var(--primary-color) 20%, transparent);
 }
 
-/* Add Candidate Modal */
+/* Add Candidate Modal — width via App.css .add-candidate-modal */
 .add-candidate-modal {
-  max-width: 900px;
-  max-height: 90vh;
   overflow-y: auto;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #eee;
-}
-
-.modal-header h2 {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #333;
-}
-
-.btn-close-modal {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: var(--text-muted);
-  padding: 5px;
-  line-height: 1;
-  transition: color 0.2s;
-}
-
-.btn-close-modal:hover {
-  color: #333;
 }
 
 .add-candidate-form {
   display: flex;
   flex-direction: column;
-  gap: 25px;
+  gap: var(--space-5);
 }
 
-.form-section {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
-}
-
-.form-section h3 {
-  margin: 0 0 20px 0;
-  color: #333;
-  font-size: 18px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid var(--primary-color);
-}
-
-.form-row {
+.add-candidate-modal .form-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 15px;
-  margin-bottom: 15px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
 }
 
-.form-group {
-  margin-bottom: 15px;
-}
+/* Modal layout — base styles in App.css */
 
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #333;
-  font-size: 14px;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-}
-
-.form-group textarea {
-  resize: vertical;
-}
-
-.form-hint {
-  margin: 5px 0 0 0;
-  font-size: 12px;
-  color: var(--text-secondary-color);
-  font-style: italic;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  padding-top: 20px;
-  border-top: 1px solid #eee;
-  margin-top: 10px;
-}
-
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-  animation: fadeIn 0.2s;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.modal-content {
-  background: var(--surface-color);
-  border-radius: var(--radius-xl);
-  padding: 32px;
-  box-shadow: var(--shadow-xl);
-  width: 100%;
-  max-width: 600px;
-  max-height: 90vh;
-  overflow-y: auto;
-  border: 1px solid var(--border-light);
-  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-/* Resume Upload Section */
 .resume-upload-item {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   padding: 15px;
   margin-bottom: 15px;
 }
@@ -294,12 +145,12 @@
   align-items: center;
   margin-bottom: 15px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .resume-upload-header h4 {
   margin: 0;
-  color: #333;
+  color: var(--text-heading);
   font-size: 16px;
 }
 
@@ -406,7 +257,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   transition: background-color 0.2s;
 }
 
@@ -418,7 +269,7 @@
 .compact-filter-clear {
   padding: 6px 12px;
   font-size: 13px;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   border: 1px solid;
   cursor: pointer;
   display: flex;
@@ -475,12 +326,12 @@
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 15px;
-  border-bottom: 2px solid #eee;
+  border-bottom: 2px solid var(--border-light);
 }
 
 .filters-header h3 {
   margin: 0;
-  color: #333;
+  color: var(--text-heading);
   font-size: 18px;
 }
 
@@ -507,7 +358,7 @@
 }
 
 .filter-hint code {
-  background: #e9ecef;
+  background: color-mix(in srgb, var(--primary-color) 8%, var(--glass-table-header));
   padding: 2px 6px;
   border-radius: 3px;
   font-size: 11px;
@@ -539,7 +390,7 @@
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 14px;
 }
 
@@ -555,7 +406,7 @@
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 14px;
 }
 
@@ -577,7 +428,7 @@
 .filter-group label {
   margin-bottom: 5px;
   font-weight: 500;
-  color: #333;
+  color: var(--text-heading);
   font-size: 13px;
 }
 
@@ -585,7 +436,7 @@
 .filter-group select {
   padding: 8px 12px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-family: inherit;
 }
@@ -600,7 +451,7 @@
 .filters-info {
   padding: 10px;
   background: #e7f3ff;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   text-align: center;
   color: var(--primary-color);
   font-size: 13px;

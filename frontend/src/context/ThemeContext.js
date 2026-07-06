@@ -14,46 +14,67 @@ const accentThemes = {
   gobunny: {
     name: 'GoBunny',
     primary: '#2B3D7E',
+    primaryLight: '#4F63C4',
     secondary: '#64748b',
-    background: '#fafbfc',
+    background: '#f4f6fc',
     surface: '#ffffff',
     text: '#1e293b',
     textSecondary: '#64748b',
     border: '#e2e8f0',
     navbar: '#ffffff',
+    accent: '#7C3AED',
   },
-  blue: {
-    name: 'Blue',
-    primary: '#1e3a5f',
+  ocean: {
+    name: 'Ocean',
+    primary: '#0369a1',
+    primaryLight: '#0ea5e9',
     secondary: '#64748b',
-    background: '#f0f4f8',
+    background: '#f0f9ff',
     surface: '#ffffff',
     text: '#0f172a',
     textSecondary: '#475569',
-    border: '#cbd5e0',
-    navbar: '#1e3a5f',
+    border: '#bae6fd',
+    navbar: '#ffffff',
+    accent: '#06b6d4',
   },
-  green: {
-    name: 'Green',
-    primary: '#059669',
-    secondary: '#64748b',
-    background: '#f0fdf4',
-    surface: '#ffffff',
-    text: '#0f172a',
-    textSecondary: '#475569',
-    border: '#bbf7d0',
-    navbar: '#065f46',
-  },
-  purple: {
-    name: 'Purple',
+  violet: {
+    name: 'Violet',
     primary: '#5b21b6',
+    primaryLight: '#8b5cf6',
     secondary: '#64748b',
     background: '#faf5ff',
     surface: '#ffffff',
     text: '#0f172a',
     textSecondary: '#475569',
     border: '#ddd6fe',
-    navbar: '#4c1d95',
+    navbar: '#ffffff',
+    accent: '#ec4899',
+  },
+  emerald: {
+    name: 'Emerald',
+    primary: '#047857',
+    primaryLight: '#10b981',
+    secondary: '#64748b',
+    background: '#ecfdf5',
+    surface: '#ffffff',
+    text: '#0f172a',
+    textSecondary: '#475569',
+    border: '#a7f3d0',
+    navbar: '#ffffff',
+    accent: '#0891b2',
+  },
+  sunset: {
+    name: 'Sunset',
+    primary: '#c2410c',
+    primaryLight: '#f97316',
+    secondary: '#64748b',
+    background: '#fff7ed',
+    surface: '#ffffff',
+    text: '#0f172a',
+    textSecondary: '#475569',
+    border: '#fed7aa',
+    navbar: '#ffffff',
+    accent: '#e11d48',
   },
 };
 
@@ -71,6 +92,15 @@ const darkTheme = {
 const getSystemTheme = () =>
   window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
+const darkenHex = (hex, amount = 20) => {
+  const normalized = hex.replace('#', '');
+  if (normalized.length !== 6) return hex;
+  const r = Math.max(0, parseInt(normalized.slice(0, 2), 16) - amount);
+  const g = Math.max(0, parseInt(normalized.slice(2, 4), 16) - amount);
+  const b = Math.max(0, parseInt(normalized.slice(4, 6), 16) - amount);
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+};
+
 const resolveStoredMode = (saved) => {
   if (!saved) return 'system';
   if (saved === 'system' || saved === 'light' || saved === 'dark') return saved;
@@ -79,10 +109,12 @@ const resolveStoredMode = (saved) => {
 };
 
 const resolveStoredAccent = (saved) => {
-  if (!saved || saved === 'ui8' || saved === 'light' || saved === 'dark' || saved === 'system') {
+  const legacyMap = { blue: 'ocean', green: 'emerald', purple: 'violet' };
+  const normalized = legacyMap[saved] || saved;
+  if (!normalized || normalized === 'ui8' || normalized === 'light' || normalized === 'dark' || normalized === 'system') {
     return 'gobunny';
   }
-  return accentThemes[saved] ? saved : 'gobunny';
+  return accentThemes[normalized] ? normalized : 'gobunny';
 };
 
 const migrateLegacyTheme = () => {
@@ -110,15 +142,20 @@ const migrateLegacyTheme = () => {
 const applyThemeVariables = (theme, isDark) => {
   const root = document.documentElement;
   const isLightNavbar = theme.navbar === '#ffffff' || theme.navbar.toLowerCase() === '#fff';
+  const primaryLight = theme.primaryLight || (isDark ? '#7b9ae0' : '#4f63c4');
+  const accent = theme.accent || '#7c3aed';
 
   root.style.setProperty('--primary-color', theme.primary);
-  root.style.setProperty('--primary-hover', isDark ? theme.primary : '#1e2d5f');
-  root.style.setProperty('--primary-light', isDark ? '#7b9ae0' : '#3d5299');
+  root.style.setProperty('--primary-hover', isDark ? theme.primary : darkenHex(theme.primary, 18));
+  root.style.setProperty('--primary-light', primaryLight);
+  root.style.setProperty('--primary-vivid', isDark ? primaryLight : theme.primary);
   root.style.setProperty('--secondary-color', theme.secondary);
   root.style.setProperty('--background-color', theme.background);
   root.style.setProperty('--bg-primary', theme.background);
-  root.style.setProperty('--surface-color', theme.surface);
-  root.style.setProperty('--bg-secondary', theme.surface);
+  const glassSurface = isDark ? 'rgba(30, 41, 59, 0.68)' : 'rgba(255, 255, 255, 0.62)';
+  const glassMuted = isDark ? 'rgba(15, 23, 42, 0.48)' : 'rgba(255, 255, 255, 0.38)';
+  root.style.setProperty('--surface-color', glassSurface);
+  root.style.setProperty('--bg-secondary', glassSurface);
   root.style.setProperty('--text-color', theme.text);
   root.style.setProperty('--text-primary', theme.text);
   root.style.setProperty('--text-heading', isDark ? theme.text : '#0f172a');
@@ -126,8 +163,22 @@ const applyThemeVariables = (theme, isDark) => {
   root.style.setProperty('--text-secondary', theme.textSecondary);
   root.style.setProperty('--border-color', theme.border);
   root.style.setProperty('--navbar-color', theme.navbar);
-  root.style.setProperty('--gradient-primary', theme.primary);
-  root.style.setProperty('--gradient-profile', `linear-gradient(135deg, ${theme.primary} 0%, ${isDark ? '#7b9ae0' : theme.primary} 100%)`);
+  root.style.setProperty(
+    '--gradient-primary',
+    `linear-gradient(135deg, ${theme.primary} 0%, ${primaryLight} 55%, ${accent} 100%)`
+  );
+  root.style.setProperty(
+    '--gradient-profile',
+    `linear-gradient(135deg, ${theme.primary} 0%, ${primaryLight} 100%)`
+  );
+  root.style.setProperty('--accent-violet', accent);
+
+  root.style.setProperty('--chart-1', theme.primary);
+  root.style.setProperty('--chart-2', accent);
+  root.style.setProperty('--chart-3', primaryLight);
+  root.style.setProperty('--chart-4', '#059669');
+  root.style.setProperty('--chart-5', '#d97706');
+  root.style.setProperty('--chart-6', '#f43f5e');
 
   const mesh = isDark
     ? `linear-gradient(168deg, ${theme.background} 0%, ${theme.surface} 50%, ${theme.background} 100%)`
@@ -136,21 +187,35 @@ const applyThemeVariables = (theme, isDark) => {
   root.style.setProperty('--mesh-gradient', mesh);
 
   if (isDark) {
-    root.style.setProperty('--glass-panel-bg', theme.surface);
-    root.style.setProperty('--glass-panel-border', 'rgba(148, 163, 184, 0.14)');
-    root.style.setProperty('--glass-sidebar-bg', theme.surface);
-    root.style.setProperty('--glass-filter-bg', theme.background);
-    root.style.setProperty('--glass-table-header', theme.background);
-    root.style.setProperty('--surface-muted', '#334155');
+    root.style.setProperty('--glass-bg', 'rgba(30, 41, 59, 0.55)');
+    root.style.setProperty('--glass-bg-strong', 'rgba(30, 41, 59, 0.68)');
+    root.style.setProperty('--glass-bg-muted', 'rgba(15, 23, 42, 0.48)');
+    root.style.setProperty('--glass-panel-bg', 'rgba(30, 41, 59, 0.68)');
+    root.style.setProperty('--glass-panel-border', 'rgba(255, 255, 255, 0.1)');
+    root.style.setProperty('--glass-sidebar-bg', 'rgba(15, 23, 42, 0.58)');
+    root.style.setProperty('--glass-filter-bg', 'rgba(15, 23, 42, 0.48)');
+    root.style.setProperty('--glass-table-header', 'rgba(15, 23, 42, 0.55)');
+    root.style.setProperty('--surface-muted', glassMuted);
     root.style.setProperty('--border-light', '#1e293b');
+    root.style.setProperty('--chrome-panel-bg', '#1e293b');
+    root.style.setProperty('--chrome-panel-muted', '#0f172a');
+    root.style.setProperty('--chrome-panel-hover', '#334155');
+    root.style.setProperty('--chrome-btn-bg', 'rgba(255, 255, 255, 0.12)');
   } else {
-    root.style.setProperty('--glass-panel-bg', '#ffffff');
-    root.style.setProperty('--glass-panel-border', 'rgba(15, 23, 42, 0.08)');
-    root.style.setProperty('--glass-sidebar-bg', '#ffffff');
-    root.style.setProperty('--glass-filter-bg', '#f8fafc');
-    root.style.setProperty('--glass-table-header', '#f8fafc');
-    root.style.setProperty('--surface-muted', '#f1f5f9');
+    root.style.setProperty('--glass-bg', 'rgba(255, 255, 255, 0.5)');
+    root.style.setProperty('--glass-bg-strong', 'rgba(255, 255, 255, 0.62)');
+    root.style.setProperty('--glass-bg-muted', 'rgba(255, 255, 255, 0.38)');
+    root.style.setProperty('--glass-panel-bg', 'rgba(255, 255, 255, 0.62)');
+    root.style.setProperty('--glass-panel-border', 'rgba(255, 255, 255, 0.55)');
+    root.style.setProperty('--glass-sidebar-bg', 'rgba(255, 255, 255, 0.52)');
+    root.style.setProperty('--glass-filter-bg', 'rgba(255, 255, 255, 0.38)');
+    root.style.setProperty('--glass-table-header', 'rgba(248, 250, 252, 0.55)');
+    root.style.setProperty('--surface-muted', glassMuted);
     root.style.setProperty('--border-light', '#f1f5f9');
+    root.style.setProperty('--chrome-panel-bg', '#ffffff');
+    root.style.setProperty('--chrome-panel-muted', '#f8fafc');
+    root.style.setProperty('--chrome-panel-hover', '#f1f5f9');
+    root.style.setProperty('--chrome-btn-bg', '#f1f5f9');
   }
 
   root.dataset.navbarStyle = isLightNavbar ? 'light' : 'dark';

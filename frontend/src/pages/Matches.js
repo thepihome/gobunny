@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { FiFilter, FiChevronDown, FiChevronUp, FiUser, FiX, FiRefreshCw } from 'react-icons/fi';
 import { useResizableColumns } from '../hooks/useResizableColumns';
 import LoadingButton from '../components/LoadingButton';
+import IconButton from '../components/IconButton';
 import './Matches.css';
 
 const Matches = () => {
@@ -203,23 +204,21 @@ const Matches = () => {
     <div className="matches-page list-page">
       <div className="page-header">
         <h1>Job Matches</h1>
-        <div className="list-page-header-actions">
-          <button
-            type="button"
-            className="btn btn-secondary"
+        <div className="list-page-header-actions page-toolbar">
+          <IconButton
+            icon={FiFilter}
+            label={showFilters ? 'Hide filters' : 'Show filters'}
+            active={showFilters}
             onClick={() => setShowFilters(!showFilters)}
-          >
-            <FiFilter /> {showFilters ? 'Hide' : 'Show'} filters
-          </button>
+          />
           {user?.role !== 'candidate' && (
-            <LoadingButton
-              className="btn btn-primary"
+            <IconButton
               icon={FiRefreshCw}
-              loading={isFetchingMatches}
+              label="Refresh matches"
+              variant="primary"
               onClick={() => refetchMatches()}
-            >
-              Refresh matches
-            </LoadingButton>
+              loading={isFetchingMatches}
+            />
           )}
         </div>
       </div>
@@ -299,9 +298,9 @@ const Matches = () => {
               </select>
             </div>
             {(filterJob || filterCandidate || filterClassification || filterScoreMin || filterStatus) && (
-              <button
-                type="button"
-                className="btn btn-secondary"
+              <IconButton
+                icon={FiX}
+                label="Clear filters"
                 onClick={() => {
                   setFilterJob('');
                   setFilterCandidate('');
@@ -309,9 +308,7 @@ const Matches = () => {
                   setFilterScoreMin('');
                   setFilterStatus('');
                 }}
-              >
-                <FiX /> Clear
-              </button>
+              />
             )}
           </div>
         </div>

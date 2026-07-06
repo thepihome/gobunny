@@ -6,6 +6,7 @@ import { FiDatabase, FiBriefcase, FiPlus, FiEdit, FiTrash2, FiX, FiSave } from '
 import { useResizableColumns } from '../hooks/useResizableColumns';
 import './Metadata.css';
 import LoadingButton, { iconSpinClass } from '../components/LoadingButton';
+import Modal from '../components/Modal';
 
 const Metadata = () => {
   const { user } = useAuth();
@@ -137,7 +138,7 @@ const Metadata = () => {
 
   return (
     <div className="metadata-page list-page">
-      <div className="metadata-header">
+      <div className="page-header metadata-header">
         <h1><FiDatabase /> Metadata</h1>
       </div>
 
@@ -229,13 +230,14 @@ const Metadata = () => {
         </div>
       </div>
 
-      {/* Role Modal */}
-      {showRoleModal && (
-        <div className="modal-overlay" onClick={() => setShowRoleModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <Modal
+        open={showRoleModal}
+        onClose={() => setShowRoleModal(false)}
+        ariaLabel={editingRole ? 'Edit job role' : 'Add job role'}
+      >
             <div className="modal-header">
               <h2>{editingRole ? 'Edit Job Role' : 'Add Job Role'}</h2>
-              <button className="btn-close-modal" onClick={() => setShowRoleModal(false)}>
+              <button type="button" className="btn-close-modal" onClick={() => setShowRoleModal(false)} aria-label="Close">
                 <FiX />
               </button>
             </div>
@@ -288,9 +290,7 @@ const Metadata = () => {
                 </LoadingButton>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 };

@@ -2,12 +2,12 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  background: var(--surface-muted);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--glass-border-outer);
   border-radius: var(--radius-full);
   padding: 3px;
   transition: all 0.3s ease;
   flex-shrink: 0;
+  box-shadow: var(--glass-highlight);
 }
 
 .theme-toggle-option {
@@ -39,6 +39,7 @@
 .theme-toggle-option.active {
   background: var(--primary-color);
   color: #fff;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--primary-color) 35%, transparent);
 }
 
 .theme-toggle--compact .theme-toggle-option {

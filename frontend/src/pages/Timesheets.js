@@ -17,6 +17,8 @@ import {
 } from 'react-icons/fi';
 import './Timesheets.css';
 import LoadingButton, { iconSpinClass } from '../components/LoadingButton';
+import IconButton from '../components/IconButton';
+import Modal from '../components/Modal';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
@@ -205,14 +207,15 @@ const Timesheets = () => {
     <div className="timesheets-page list-page">
       <div className="page-header">
         <h1>Timesheets</h1>
-        <div className="list-page-header-actions">
-          <button type="button" className="btn btn-secondary" onClick={() => setShowFilters(!showFilters)}>
-            <FiFilter /> {showFilters ? 'Hide' : 'Show'} filters
-          </button>
+        <div className="list-page-header-actions page-toolbar">
+          <IconButton
+            icon={FiFilter}
+            label={showFilters ? 'Hide filters' : 'Show filters'}
+            active={showFilters}
+            onClick={() => setShowFilters(!showFilters)}
+          />
           {canCreate && (
-            <button type="button" className="btn btn-primary" onClick={openCreate}>
-              <FiPlus /> Log time
-            </button>
+            <IconButton icon={FiPlus} label="Log time" variant="primary" onClick={openCreate} />
           )}
         </div>
       </div>
@@ -297,18 +300,16 @@ const Timesheets = () => {
           {timesheets?.length > 0 ? (
             <>
               <p>No timesheets match your filters.</p>
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    setFilterStatus('');
-                    setSearch('');
-                  }}
-                >
-                  <FiX /> Clear filters
-                </button>
-              )}
+            {hasActiveFilters && (
+              <IconButton
+                icon={FiX}
+                label="Clear filters"
+                onClick={() => {
+                  setFilterStatus('');
+                  setSearch('');
+                }}
+              />
+            )}
             </>
           ) : (
             <>
@@ -430,16 +431,19 @@ const Timesheets = () => {
         </div>
       )}
 
-      {showModal && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content timesheet-modal" onClick={(e) => e.stopPropagation()}>
-            <h2>{editingTimesheet ? 'Edit timesheet' : 'Log time'}</h2>
-            <p className="timesheet-modal__hint">
-              {editingTimesheet
-                ? 'Only draft entries can be edited. Submit when ready for approval.'
-                : 'Add hours against a candidate and/or job. Submit when you are ready.'}
-            </p>
-            <form onSubmit={handleSubmit}>
+      <Modal
+        open={showModal}
+        onClose={closeModal}
+        contentClassName="timesheet-modal"
+        ariaLabel={editingTimesheet ? 'Edit timesheet' : 'Log time'}
+      >
+        <h2>{editingTimesheet ? 'Edit timesheet' : 'Log time'}</h2>
+        <p className="timesheet-modal__hint">
+          {editingTimesheet
+            ? 'Only draft entries can be edited. Submit when ready for approval.'
+            : 'Add hours against a candidate and/or job. Submit when you are ready.'}
+        </p>
+        <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label htmlFor="ts-date">Date</label>
                 <input
@@ -525,9 +529,7 @@ const Timesheets = () => {
                 )}
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 };

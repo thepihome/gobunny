@@ -1,5 +1,5 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import api from '../config/api';
+import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
+import api, { setAuthBootstrapping } from '../config/api';
 
 const AuthContext = createContext();
 
@@ -11,49 +11,75 @@ export const useAuth = () => {
   return context;
 };
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+export const AuthProvider = ({ children, initialUser = null }) => {
+  const [user, setUser] = useState(initialUser);
+  /** False until token/no-token bootstrap finishes — gates PrivateRoute. */
+  const [sessionChecked, setSessionChecked] = useState(Boolean(initialUser));
+  const bootstrapAbortRef = useRef(null);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-
-    if (token && savedUser) {
-      setUser(JSON.parse(savedUser));
-      // Verify token is still valid
-      api
-        .get('/auth/me')
-        .then((response) => {
-          setUser(response.data.user);
-        })
-        .catch(() => {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setUser(null);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } else {
-      setLoading(false);
-    }
-  }, []);
-
-  const loginWithGoogle = async (credential) => {
-    const response = await api.post('/auth/google', { credential });
-    const { token, user } = response.data;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    setUser(user);
-    setLoading(false);
-    return user;
-  };
-
-  const logout = () => {
+  const clearSession = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
+  }, []);
+
+  useEffect(() => {
+    if (initialUser) {
+      setSessionChecked(true);
+      return undefined;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setSessionChecked(true);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    bootstrapAbortRef.current = controller;
+    setAuthBootstrapping(true);
+    setSessionChecked(false);
+    setUser(null);
+
+    api
+      .get('/auth/me', { signal: controller.signal })
+      .then((response) => {
+        setUser(response.data.user);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      })
+      .catch((error) => {
+        if (error.code === 'ERR_CANCELED') return;
+        clearSession();
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setAuthBootstrapping(false);
+          setSessionChecked(true);
+        }
+      });
+
+    return () => {
+      controller.abort();
+      setAuthBootstrapping(false);
+    };
+  }, [initialUser, clearSession]);
+
+  const loginWithGoogle = async (credential) => {
+    const response = await api.post('/auth/google', { credential });
+    const { token, user: loggedInUser } = response.data;
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(loggedInUser));
+    setUser(loggedInUser);
+    setSessionChecked(true);
+    setAuthBootstrapping(false);
+    return loggedInUser;
+  };
+
+  const logout = () => {
+    bootstrapAbortRef.current?.abort();
+    setAuthBootstrapping(false);
+    clearSession();
+    setSessionChecked(true);
   };
 
   const refreshUser = async () => {
@@ -64,14 +90,20 @@ export const AuthProvider = ({ children }) => {
       setUser(updatedUser);
       return updatedUser;
     } catch (error) {
-      console.error('Error refreshing user:', error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        clearSession();
+      }
+      throw error;
     }
   };
 
+  const loading = !sessionChecked;
+
   return (
-    <AuthContext.Provider value={{ user, loginWithGoogle, logout, loading, refreshUser }}>
+    <AuthContext.Provider
+      value={{ user, loginWithGoogle, logout, loading, sessionChecked, refreshUser }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
-

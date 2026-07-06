@@ -3,10 +3,9 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const PrivateRoute = ({ children }) => {
-  const { user, loading } = useAuth();
-  const hasToken = Boolean(localStorage.getItem('token'));
+  const { user, loading, sessionChecked } = useAuth();
 
-  if (loading || (hasToken && !user)) {
+  if (!sessionChecked || loading) {
     return <div className="loading">Loading...</div>;
   }
 
@@ -18,5 +17,3 @@ const PrivateRoute = ({ children }) => {
 };
 
 export default PrivateRoute;
-
-

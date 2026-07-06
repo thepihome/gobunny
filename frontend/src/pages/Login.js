@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from '../components/ThemeToggle';
+import BrandLogo from '../components/BrandLogo';
 import './Auth.css';
 
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
@@ -94,15 +95,11 @@ const Login = () => {
         <ThemeToggle />
       </div>
       <div className="auth-brand">
-        <span className="brand-mark" aria-hidden="true">GB</span>
-        <div className="auth-brand-text">
-          <h1>GoBunny</h1>
-          <p>Platform</p>
-        </div>
+        <BrandLogo variant="auth" />
       </div>
       <div className="auth-card">
         <h2>Sign in</h2>
-        <p className="auth-subtitle">Use your Google account to access the GoBunny platform</p>
+        <p className="auth-subtitle">Use your Google account to access GoDash</p>
         {error && <div className="error">{error}</div>}
         <div className="google-signin-wrapper">
           {GOOGLE_CLIENT_ID ? (

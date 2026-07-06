@@ -22,7 +22,8 @@ import { handleEmailSettings } from './routes/emailSettings.js';
 import { handleNotifications } from './routes/notifications.js';
 import { handleDashboard } from './routes/dashboard.js';
 import { handleScanner, handleScannerInternal } from './routes/scanner.js';
-import { authenticate } from './middleware/auth.js';
+import { handleCareers } from './routes/careers.js';
+import { authenticate, authorize } from './middleware/auth.js';
 import { getCorsHeaders, handleCORS, addCorsHeaders } from './utils/cors.js';
 
 export async function handleRequest(request, env, ctx) {
@@ -71,8 +72,30 @@ export async function handleRequest(request, env, ctx) {
     );
   }
 
-  // Database test endpoint (for debugging)
+  // Database test endpoint (admin only)
   if (path === '/api/health/db' && method === 'GET') {
+    const authResult = await authenticate(request, env);
+    if (authResult.error) {
+      return addCorsHeaders(
+        new Response(JSON.stringify({ error: authResult.error }), {
+          status: authResult.status || 401,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+        env,
+        request
+      );
+    }
+    const adminError = authorize('admin')(authResult.user);
+    if (adminError) {
+      return addCorsHeaders(
+        new Response(JSON.stringify({ error: adminError.error }), {
+          status: adminError.status,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+        env,
+        request
+      );
+    }
     try {
       const { query } = await import('./utils/db.js');
       const tables = await query(env, "SELECT name FROM sqlite_master WHERE type='table'");
@@ -107,6 +130,12 @@ export async function handleRequest(request, env, ctx) {
   // Scanner internal API (service-to-service, no JWT)
   if (path.startsWith('/api/scanner/internal/')) {
     const response = await handleScannerInternal(request, env);
+    return addCorsHeaders(response, env, request);
+  }
+
+  // Public career site API (no JWT)
+  if (path.startsWith('/api/careers')) {
+    const response = await handleCareers(request, env);
     return addCorsHeaders(response, env, request);
   }
 

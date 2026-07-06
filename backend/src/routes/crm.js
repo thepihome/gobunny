@@ -122,6 +122,24 @@ export async function handleCRM(request, env, user) {
         );
       }
 
+      if (user.role === 'consultant') {
+        const assignment = await queryOne(
+          env,
+          'SELECT id FROM consultant_assignments WHERE consultant_id = ? AND candidate_id = ?',
+          [user.id, candidate_id]
+        );
+        if (!assignment) {
+          return addCorsHeaders(
+            new Response(
+              JSON.stringify({ error: 'Candidate not assigned to you' }),
+              { status: 403, headers: { 'Content-Type': 'application/json' } }
+            ),
+            env,
+            request
+          );
+        }
+      }
+
       // Insert interaction
       const result = await execute(
         env,
@@ -163,6 +181,74 @@ export async function handleCRM(request, env, user) {
       );
     } catch (error) {
       console.error('Error creating CRM interaction:', error);
+      return addCorsHeaders(
+        new Response(
+          JSON.stringify({ error: 'Server error', details: error.message }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        ),
+        env,
+        request
+      );
+    }
+  }
+
+  // Get CRM interactions for a candidate
+  const candidateCrmMatch = path.match(/^\/api\/crm\/candidate\/(\d+)$/);
+  if (candidateCrmMatch && method === 'GET') {
+    const authError = authorize('consultant', 'admin')(user);
+    if (authError) {
+      return addCorsHeaders(
+        new Response(
+          JSON.stringify({ error: authError.error }),
+          { status: authError.status, headers: { 'Content-Type': 'application/json' } }
+        ),
+        env,
+        request
+      );
+    }
+
+    try {
+      const candidateId = candidateCrmMatch[1];
+
+      if (user.role === 'consultant') {
+        const assignment = await queryOne(
+          env,
+          'SELECT id FROM consultant_assignments WHERE consultant_id = ? AND candidate_id = ?',
+          [user.id, candidateId]
+        );
+        if (!assignment) {
+          return addCorsHeaders(
+            new Response(
+              JSON.stringify({ error: 'Access denied' }),
+              { status: 403, headers: { 'Content-Type': 'application/json' } }
+            ),
+            env,
+            request
+          );
+        }
+      }
+
+      const interactions = await query(
+        env,
+        `SELECT c.*,
+         u.first_name as consultant_first_name, u.last_name as consultant_last_name
+         FROM crm_contacts c
+         LEFT JOIN users u ON c.consultant_id = u.id
+         WHERE c.candidate_id = ?
+         ORDER BY c.interaction_date DESC, c.created_at DESC`,
+        [candidateId]
+      );
+
+      return addCorsHeaders(
+        new Response(JSON.stringify(interactions || []), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+        env,
+        request
+      );
+    } catch (error) {
+      console.error('Error fetching candidate CRM:', error);
       return addCorsHeaders(
         new Response(
           JSON.stringify({ error: 'Server error', details: error.message }),

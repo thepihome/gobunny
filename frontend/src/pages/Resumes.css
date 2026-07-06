@@ -1,52 +1,66 @@
 .resumes-page {
-  max-width: 1200px;
+  max-width: var(--container-xl);
   margin: 0 auto;
 }
 
 .resumes-list {
   display: grid;
-  gap: 20px;
+  gap: 1.25rem;
 }
 
 .resume-card {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--glass-bg-strong);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  border: 1px solid var(--glass-border-outer);
+  box-shadow: var(--shadow-md);
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.resume-card:hover {
+  border-color: color-mix(in srgb, var(--primary-color) 25%, var(--glass-border-outer));
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
 }
 
 .resume-header {
   display: flex;
-  gap: 15px;
-  margin-bottom: 15px;
+  gap: 0.85rem;
+  margin-bottom: 0.85rem;
+  align-items: flex-start;
 }
 
 .resume-header h3 {
   margin: 0;
-  color: #333;
+  color: var(--text-heading);
+  font-size: var(--text-lg);
+  font-weight: 600;
 }
 
 .resume-date {
   color: var(--text-muted);
-  font-size: 14px;
-  margin: 5px 0;
+  font-size: var(--text-sm);
+  margin: 0.25rem 0 0;
 }
 
 .resume-summary {
   color: var(--text-secondary-color);
-  margin: 15px 0;
+  margin: 0.85rem 0;
+  line-height: 1.55;
 }
 
 .resume-skills {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  margin: 15px 0;
+  gap: 0.35rem;
+  margin: 0.85rem 0;
 }
 
 .resume-experience {
   color: var(--text-secondary-color);
-  margin: 10px 0;
+  margin: 0.65rem 0;
+  font-size: var(--text-sm);
 }
-
-

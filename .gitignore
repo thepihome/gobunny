@@ -11,6 +11,8 @@ frontend/node_modules/
 .env.production.local
 backend/.env
 scanner/.env
+backend/.dev.vars
+backend/.wrangler/
 
 # Build outputs
 frontend/build/
@@ -44,5 +46,6 @@ backend/uploads/
 tests/playwright/test-results/
 tests/playwright/playwright-report/
 tests/playwright/.env
+tests/.watch/
 
 agency-agents/

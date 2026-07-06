@@ -1,6 +1,17 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5023/api';
+export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8787/api';
+
+/** True while AuthContext is validating a stored token (suppresses 401 redirect race). */
+let authBootstrapping = false;
+
+export function setAuthBootstrapping(value) {
+  authBootstrapping = Boolean(value);
+}
+
+export function isAuthBootstrapping() {
+  return authBootstrapping;
+}
 
 if (
   typeof window !== 'undefined' &&
@@ -20,21 +31,20 @@ const api = axios.create({
   },
 });
 
-// Add token to requests
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Handle auth errors — avoid silent redirect loop on login page
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -43,7 +53,7 @@ api.interceptors.response.use(
     const isAuthRequest = requestUrl.includes('/auth/');
     const onLoginPage = window.location.pathname === '/login';
 
-    if (status === 401 && !isAuthRequest && !onLoginPage) {
+    if (status === 401 && !isAuthRequest && !onLoginPage && !authBootstrapping) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
@@ -52,5 +62,36 @@ api.interceptors.response.use(
   }
 );
 
-export default api;
+const BLOB_REVOKE_MS = 60_000;
 
+/**
+ * Fetch an authenticated file and return a blob URL plus revoke().
+ * Call revoke() after the consumer is done (e.g. after opening a tab).
+ */
+export async function fetchAuthenticatedFile(path) {
+  const response = await api.get(path, { responseType: 'blob' });
+  const url = URL.createObjectURL(response.data);
+  let revoked = false;
+  const revoke = () => {
+    if (revoked) return;
+    revoked = true;
+    URL.revokeObjectURL(url);
+  };
+  const autoRevokeTimer = setTimeout(revoke, BLOB_REVOKE_MS);
+  return {
+    url,
+    revoke: () => {
+      clearTimeout(autoRevokeTimer);
+      revoke();
+    },
+  };
+}
+
+/** Open an authenticated file in a new tab and schedule blob URL cleanup. */
+export async function openAuthenticatedFile(path) {
+  const { url, revoke } = await fetchAuthenticatedFile(path);
+  window.open(url, '_blank', 'noopener,noreferrer');
+  setTimeout(revoke, BLOB_REVOKE_MS);
+}
+
+export default api;

@@ -25,10 +25,6 @@ CREATE TABLE IF NOT EXISTS scan_runs (
 
 CREATE INDEX IF NOT EXISTS idx_scan_sources_enabled ON scan_sources(enabled);
 CREATE INDEX IF NOT EXISTS idx_scan_runs_created ON scan_runs(created_at DESC);
-
--- Jobs: track portal origin for dedup
-ALTER TABLE jobs ADD COLUMN source_url TEXT;
-ALTER TABLE jobs ADD COLUMN source_provider TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_source_url ON jobs(source_url) WHERE source_url IS NOT NULL;
 
 -- Seed example sources (disabled by default — enable in Settings)

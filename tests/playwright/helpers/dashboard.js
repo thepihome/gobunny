@@ -1,4 +1,4 @@
-const { expect } = require('@playwright/test');
+const { waitForDashboardReady } = require('./navigation');
 
 function dashboardTab(page, name) {
   return page
@@ -8,12 +8,6 @@ function dashboardTab(page, name) {
 
 function kpiModal(page) {
   return page.locator('.modal-content');
-}
-
-async function waitForDashboardReady(page) {
-  await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible({
-    timeout: 30_000,
-  });
 }
 
 module.exports = { dashboardTab, kpiModal, waitForDashboardReady };

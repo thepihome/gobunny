@@ -1,0 +1,94 @@
+/* Matches ipihome/css/style.css — .site-brand, .brand-wordmark, .brand-go, .brand-rest */
+
+.site-brand.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.brand-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.brand-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.brand-wordmark--product {
+  font-size: 1.25rem;
+}
+
+.brand-wordmark--parent {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.brand-go {
+  color: var(--primary-color);
+}
+
+.brand-rest {
+  color: var(--text-heading);
+}
+
+.site-brand:hover .brand-go,
+.navbar-brand:hover .brand-go {
+  color: var(--primary-hover);
+}
+
+.brand-byline {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--text-secondary-color);
+  line-height: 1.2;
+}
+
+/* Auth / login — larger product name */
+.brand-logo--auth .brand-wordmark--product {
+  font-size: 1.625rem;
+}
+
+.brand-logo--auth .brand-byline {
+  font-size: 0.8125rem;
+  margin-top: 0.15rem;
+}
+
+/* Dark navbar (colored header) */
+[data-navbar-style='dark'] .brand-go {
+  color: #fff;
+}
+
+[data-navbar-style='dark'] .brand-rest {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+[data-navbar-style='dark'] .brand-byline {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+[data-navbar-style='dark'] .site-brand:hover .brand-go,
+[data-navbar-style='dark'] .navbar-brand:hover .brand-go {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+@media (max-width: 768px) {
+  .brand-logo--navbar .brand-byline {
+    display: none;
+  }
+
+  .brand-logo--navbar .brand-wordmark--product {
+    font-size: 1.125rem;
+  }
+}

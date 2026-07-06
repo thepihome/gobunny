@@ -123,8 +123,8 @@ export async function handleScannerInternal(request, env) {
       await execute(
         env,
         `INSERT INTO jobs (title, description, company, location, salary_min, salary_max,
-         external_apply_link, source_url, source_provider, status, required_skills, preferred_skills)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', '[]')`,
+         external_apply_link, source_url, source_provider, listing_type, status, required_skills, preferred_skills)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'external', ?, '[]', '[]')`,
         [
           title,
           job.description || null,

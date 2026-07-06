@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { FiPlus, FiTrash2, FiUser, FiMail, FiCalendar, FiX, FiUsers, FiEdit2, FiSave } from 'react-icons/fi';
-import LoadingButton from '../components/LoadingButton';
+import LoadingButton, { iconSpinClass } from '../components/LoadingButton';
+import IconButton from '../components/IconButton';
+import Modal from '../components/Modal';
 import UserActivityTimeline from '../components/UserActivityTimeline';
 import { useResizableColumns } from '../hooks/useResizableColumns';
 import './Users.css';
@@ -18,6 +20,7 @@ const ROLE_FILTERS = [
 
 const Users = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [roleFilter, setRoleFilter] = useState('all');
   const [detailTab, setDetailTab] = useState('profile');
@@ -37,9 +40,9 @@ const Users = () => {
   });
 
   const { tableRef, getColumnProps, ResizeHandle } = useResizableColumns(
-    [180, 220, 110, 120, 100, 120],
-    'users-table-columns',
-    [100, 120, 80, 90, 80, 100]
+    [180, 220, 110, 120, 100],
+    'users-table-columns-v2',
+    [100, 120, 80, 90, 80]
   );
 
   const { data: users, isLoading } = useQuery(
@@ -123,11 +126,32 @@ const Users = () => {
     {
       onSuccess: () => {
         queryClient.invalidateQueries('users');
+        setShowUserDetails(false);
+        setSelectedUser(null);
+        setIsEditing(false);
+      },
+      onError: (err) => {
+        alert(err.response?.data?.error || err.message || 'Failed to delete user');
       },
     }
   );
 
+  const handleDeleteUser = () => {
+    if (!selectedUser) return;
+    if (selectedUser.id === user?.id) {
+      alert('Cannot delete your own account');
+      return;
+    }
+    if (window.confirm(`Are you sure you want to delete ${selectedUser.first_name} ${selectedUser.last_name}?`)) {
+      deleteMutation.mutate(selectedUser.id);
+    }
+  };
+
   const handleUserClick = (row) => {
+    if (row.role === 'candidate') {
+      navigate(`/candidates/${row.id}`);
+      return;
+    }
     setSelectedUser(row);
     setShowUserDetails(true);
     setIsEditing(false);
@@ -202,16 +226,12 @@ const Users = () => {
   return (
     <div className="users-page list-page">
       <div className="page-header">
-        <div>
-          <h1>Users</h1>
-          <p className="users-page-subtitle">
-            View all platform users, activity logs, and CRM interactions by user.
-          </p>
-        </div>
-        <div className="list-page-header-actions">
-          <button
-            className="btn btn-primary"
-            type="button"
+        <h1>Users</h1>
+        <div className="list-page-header-actions page-toolbar">
+          <IconButton
+            icon={FiPlus}
+            label="Add user"
+            variant="primary"
             onClick={() => {
               setEditingUser(null);
               setFormData({
@@ -225,9 +245,7 @@ const Users = () => {
               });
               setShowModal(true);
             }}
-          >
-            <FiPlus /> Add User
-          </button>
+          />
         </div>
       </div>
 
@@ -258,7 +276,6 @@ const Users = () => {
               <th {...getColumnProps(2)}>Role<ResizeHandle index={2} /></th>
               <th {...getColumnProps(3)}>Phone<ResizeHandle index={3} /></th>
               <th {...getColumnProps(4)}>Status<ResizeHandle index={4} /></th>
-              <th {...getColumnProps(5)}>Actions<ResizeHandle index={5} /></th>
             </tr>
           </thead>
           <tbody>
@@ -283,34 +300,24 @@ const Users = () => {
                       {row.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => {
-                        if (window.confirm(`Are you sure you want to delete ${row.first_name} ${row.last_name}?`)) {
-                          deleteMutation.mutate(row.id);
-                        }
-                      }}
-                      className="btn btn-danger btn-sm"
-                    >
-                      <FiTrash2 /> Delete
-                    </button>
-                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="empty-state">No users found</td>
+                <td colSpan="5" className="empty-state">No users found</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
 
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>{editingUser ? 'Edit User' : 'Add User'}</h2>
-            <form onSubmit={handleSubmit}>
+      <Modal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        ariaLabel={editingUser ? 'Edit user' : 'Add user'}
+      >
+        <h2>{editingUser ? 'Edit User' : 'Add User'}</h2>
+        <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>First Name</label>
                 <input
@@ -392,35 +399,37 @@ const Users = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
-      {/* User Details Modal */}
-      {showUserDetails && selectedUser && (
-        <div className="modal-overlay" onClick={() => {
+      <Modal
+        open={Boolean(showUserDetails && selectedUser)}
+        onClose={() => {
           setShowUserDetails(false);
           setSelectedUser(null);
           setIsEditing(false);
-        }}>
-          <div className="modal-content user-details-modal" onClick={(e) => e.stopPropagation()}>
+        }}
+        contentClassName="user-details-modal"
+        ariaLabel="User details"
+      >
             <div className="modal-header">
               <h2>
-                <FiUser /> {selectedUser.first_name} {selectedUser.last_name}
+                <FiUser aria-hidden /> {selectedUser?.first_name} {selectedUser?.last_name}
               </h2>
               <button
+                type="button"
                 className="btn-close-modal"
                 onClick={() => {
                   setShowUserDetails(false);
                   setSelectedUser(null);
                   setIsEditing(false);
                 }}
+                aria-label="Close"
               >
                 <FiX />
               </button>
             </div>
 
-            {!isEditing && (
+            {selectedUser && !isEditing && (
               <div className="user-detail-tabs">
                 <button
                   type="button"
@@ -537,7 +546,7 @@ const Users = () => {
                       )}
                     </div>
 
-                    <div className="modal-actions">
+                    <div className="modal-actions user-detail-modal-actions">
                       <button
                         type="button"
                         className="btn btn-primary"
@@ -555,6 +564,18 @@ const Users = () => {
                       >
                         Close
                       </button>
+                      {selectedUser.id !== user?.id && (
+                        <button
+                          type="button"
+                          className="btn btn-danger user-detail-delete-btn"
+                          onClick={handleDeleteUser}
+                          disabled={deleteMutation.isLoading}
+                          title="Delete user"
+                        >
+                          <FiTrash2 className={iconSpinClass(deleteMutation.isLoading)} />
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -673,9 +694,7 @@ const Users = () => {
             ) : (
               <div className="error">Failed to load user details</div>
             )}
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 };

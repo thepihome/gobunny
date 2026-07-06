@@ -144,6 +144,14 @@ export function buildCandidateText(userRow, profile, resume) {
       skills = String(resume.skills);
     }
   }
+  const contentText = (resume?.content_text || '').trim();
+  const resumeBody = contentText
+    ? `Full resume text:\n${contentText.slice(0, 8000)}`
+    : [
+        `Summary: ${(profile?.summary || resume?.summary || '').slice(0, 4000)}`,
+        `Skills: ${skills}`,
+        `Education: ${resume?.education || profile?.additional_notes || ''}`.slice(0, 2000),
+      ].join('\n');
   return [
     `Name: ${userRow.first_name || ''} ${userRow.last_name || ''}`,
     `Email: ${userRow.email || ''}`,
@@ -151,8 +159,6 @@ export function buildCandidateText(userRow, profile, resume) {
     `Current title: ${profile?.current_job_title || ''}`,
     `Company: ${profile?.current_company || ''}`,
     `Years experience: ${profile?.years_of_experience ?? resume?.experience_years ?? ''}`,
-    `Summary: ${(profile?.summary || resume?.summary || '').slice(0, 4000)}`,
-    `Skills: ${skills}`,
-    `Education: ${resume?.education || profile?.additional_notes || ''}`.slice(0, 2000),
+    resumeBody,
   ].join('\n');
 }

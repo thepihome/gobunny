@@ -110,7 +110,14 @@ async function refreshConfig() {
       applySchedule();
     }
   } catch (err) {
-    console.warn('Config poll failed:', err.message);
+    let hint = '';
+    if (err.status === 401) {
+      hint =
+        ' — set matching SCANNER_SECRET in backend/.dev.vars and scanner/.env, then restart wrangler dev + scanner';
+    } else if (err.message === 'fetch failed' || err.cause?.code === 'ECONNREFUSED') {
+      hint = ' — is wrangler dev running on GOBUNNY_API_URL?';
+    }
+    console.warn(`Config poll failed: ${err.message}${hint}`);
   }
 }
 

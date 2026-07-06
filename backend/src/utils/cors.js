@@ -15,7 +15,7 @@ function normalizeOrigin(origin) {
  * Example: FRONTEND_URLS=https://gobunny.pages.dev,https://godash.gobunnyy.com
  */
 export function getAllowedOrigins(env) {
-  const raw = [env.FRONTEND_URLS, env.FRONTEND_URL].filter(Boolean).join(',');
+  const raw = [env.FRONTEND_URLS, env.FRONTEND_URL, env.CAREERS_SITE_URLS].filter(Boolean).join(',');
   if (!raw || raw.trim() === '*') return ['*'];
 
   const origins = new Set();
@@ -39,19 +39,30 @@ function isOriginAllowed(allowedOrigins, requestOrigin) {
 export function getCorsHeaders(env, requestOrigin = null) {
   const allowedOrigins = getAllowedOrigins(env);
 
-  let origin = '*';
-  if (requestOrigin && isOriginAllowed(allowedOrigins, requestOrigin)) {
-    origin = normalizeOrigin(requestOrigin);
-  } else if (!allowedOrigins.includes('*') && allowedOrigins.length === 1) {
-    origin = allowedOrigins[0];
-  }
-
-  return {
-    'Access-Control-Allow-Origin': origin,
+  const headers = {
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Credentials': 'true',
   };
+
+  if (requestOrigin && isOriginAllowed(allowedOrigins, requestOrigin)) {
+    headers['Access-Control-Allow-Origin'] = normalizeOrigin(requestOrigin);
+    headers['Access-Control-Allow-Credentials'] = 'true';
+    return headers;
+  }
+
+  if (!allowedOrigins.includes('*') && allowedOrigins.length === 1) {
+    headers['Access-Control-Allow-Origin'] = allowedOrigins[0];
+    headers['Access-Control-Allow-Credentials'] = 'true';
+    return headers;
+  }
+
+  if (allowedOrigins.includes('*')) {
+    headers['Access-Control-Allow-Origin'] = '*';
+    return headers;
+  }
+
+  // Disallowed origin — omit ACAO/credentials (browser blocks cross-origin)
+  return headers;
 }
 
 /**

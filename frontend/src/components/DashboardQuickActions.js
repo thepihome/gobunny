@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { StaggerGrid, StaggerItem } from './motion';
 import {
   FiBriefcase,
   FiUsers,
@@ -38,26 +39,27 @@ export default function DashboardQuickActions({ role }) {
   const actions = ACTIONS_BY_ROLE[role] || ACTIONS_BY_ROLE.candidate;
 
   return (
-    <div className="quick-actions-grid">
+    <StaggerGrid className="quick-actions-grid">
       {actions.map((action) => {
         const Icon = action.icon;
         return (
-          <button
-            key={action.path}
-            type="button"
-            className="quick-action-card"
-            onClick={() => navigate(action.path)}
-          >
-            <span className="quick-action-icon">
-              <Icon />
-            </span>
-            <span className="quick-action-text">
-              <strong>{action.label}</strong>
-              <small>{action.desc}</small>
-            </span>
-          </button>
+          <StaggerItem key={action.path}>
+            <button
+              type="button"
+              className="quick-action-card"
+              onClick={() => navigate(action.path)}
+            >
+              <span className="quick-action-icon">
+                <Icon />
+              </span>
+              <span className="quick-action-text">
+                <strong>{action.label}</strong>
+                <small>{action.desc}</small>
+              </span>
+            </button>
+          </StaggerItem>
         );
       })}
-    </div>
+    </StaggerGrid>
   );
 }
