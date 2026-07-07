@@ -15,7 +15,14 @@ function normalizeOrigin(origin) {
  * Example: FRONTEND_URLS=https://gobunny.pages.dev,https://godash.gobunnyy.com
  */
 export function getAllowedOrigins(env) {
-  const raw = [env.FRONTEND_URLS, env.FRONTEND_URL, env.CAREERS_SITE_URLS].filter(Boolean).join(',');
+  const raw = [
+    env.FRONTEND_URLS,
+    env.FRONTEND_URL,
+    env.CAREERS_SITE_URLS,
+    env.CORS_EXTRA_ORIGINS,
+  ]
+    .filter(Boolean)
+    .join(',');
   if (!raw || raw.trim() === '*') return ['*'];
 
   const origins = new Set();
@@ -27,10 +34,21 @@ export function getAllowedOrigins(env) {
   return origins.size > 0 ? [...origins] : ['*'];
 }
 
+function wildcardToRegex(pattern) {
+  const parts = pattern.split('*').map((part) =>
+    part.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+  );
+  return new RegExp(`^${parts.join('[^.]+')}$`);
+}
+
 function isOriginAllowed(allowedOrigins, requestOrigin) {
   if (allowedOrigins.includes('*')) return true;
   if (!requestOrigin) return false;
-  return allowedOrigins.includes(normalizeOrigin(requestOrigin));
+  const normalized = normalizeOrigin(requestOrigin);
+  if (allowedOrigins.includes(normalized)) return true;
+  return allowedOrigins.some(
+    (pattern) => pattern.includes('*') && wildcardToRegex(pattern).test(normalized)
+  );
 }
 
 /**
@@ -40,7 +58,7 @@ export function getCorsHeaders(env, requestOrigin = null) {
   const allowedOrigins = getAllowedOrigins(env);
 
   const headers = {
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 
@@ -50,7 +68,12 @@ export function getCorsHeaders(env, requestOrigin = null) {
     return headers;
   }
 
-  if (!allowedOrigins.includes('*') && allowedOrigins.length === 1) {
+  if (
+    !requestOrigin &&
+    !allowedOrigins.includes('*') &&
+    allowedOrigins.length === 1 &&
+    !allowedOrigins[0].includes('*')
+  ) {
     headers['Access-Control-Allow-Origin'] = allowedOrigins[0];
     headers['Access-Control-Allow-Credentials'] = 'true';
     return headers;
@@ -80,7 +103,7 @@ function getOriginFromRequest(request) {
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*', // Default, will be overridden
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Allow-Credentials': 'true',
 };

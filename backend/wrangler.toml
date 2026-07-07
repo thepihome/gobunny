@@ -65,6 +65,8 @@ main = "worker.js"
 
 [env.dev.vars]
 SCANNER_SERVICE_URL = "http://localhost:8790"
+# Merged with FRONTEND_URLS secret (secrets do not override this var name).
+CORS_EXTRA_ORIGINS = "https://dev-godash-future-builds.gobunny.pages.dev,https://*.gobunny.pages.dev,https://*.gobunnyy.pages.dev,http://localhost:3000"
 
 [[env.dev.d1_databases]]
 binding = "DB"

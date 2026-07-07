@@ -23,6 +23,7 @@ import { handleNotifications } from './routes/notifications.js';
 import { handleDashboard } from './routes/dashboard.js';
 import { handleScanner, handleScannerInternal } from './routes/scanner.js';
 import { handleCareers } from './routes/careers.js';
+import { handleEndpoints } from './routes/endpoints.js';
 import { authenticate, authorize } from './middleware/auth.js';
 import { getCorsHeaders, handleCORS, addCorsHeaders } from './utils/cors.js';
 
@@ -190,6 +191,12 @@ export async function handleRequest(request, env, ctx) {
 
     // Attach user to request context
     const user = authResult.user;
+
+    // API catalog for Settings UI (any authenticated user)
+    if (path === '/api/endpoints' && method === 'GET') {
+      const response = await handleEndpoints(request, env);
+      return addCorsHeaders(response, env, request);
+    }
 
     // Route to appropriate handler
     let response;
