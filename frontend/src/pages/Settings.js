@@ -4,10 +4,11 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { FiSettings, FiUser, FiDroplet, FiUsers, FiShield, FiSave, FiX, FiPlus, FiEdit, FiTrash2, FiMail, FiCalendar, FiEdit2, FiUserPlus, FiUserMinus, FiInfo, FiZap, FiGlobe } from 'react-icons/fi';
+import { FiSettings, FiUser, FiDroplet, FiUsers, FiShield, FiSave, FiX, FiPlus, FiEdit, FiTrash2, FiMail, FiCalendar, FiEdit2, FiUserPlus, FiUserMinus, FiInfo, FiZap, FiGlobe, FiCode } from 'react-icons/fi';
 import AiMatchingSettings from '../components/AiMatchingSettings';
 import ScannerSettings from '../components/ScannerSettings';
 import EmailSettings from '../components/EmailSettings';
+import ApiEndpointsSettings from '../components/ApiEndpointsSettings';
 import LoadingButton from '../components/LoadingButton';
 import ThemeToggle from '../components/ThemeToggle';
 import './Settings.css';
@@ -101,6 +102,7 @@ const Settings = () => {
   const tabs = [
     { id: 'profile', label: 'Profile', icon: FiUser, roles: ['candidate', 'consultant', 'admin'] },
     { id: 'theme', label: 'Theme', icon: FiDroplet, roles: ['candidate', 'consultant', 'admin'] },
+    { id: 'endpoints', label: 'API endpoints', icon: FiCode, roles: ['candidate', 'consultant', 'admin'] },
     ...(user?.role === 'admin' ? [
       { id: 'users', label: 'Users', icon: FiUsers, roles: ['admin'] },
       { id: 'groups', label: 'Groups', icon: FiUsers, roles: ['admin'] },
@@ -275,6 +277,8 @@ const Settings = () => {
               </div>
             </div>
           )}
+
+          {activeTab === 'endpoints' && <ApiEndpointsSettings />}
 
           {activeTab === 'users' && user?.role === 'admin' && <UsersManagement />}
 
