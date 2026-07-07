@@ -258,6 +258,17 @@ migrate_local_d1() {
           2>/dev/null || warn "Job listing_type column already exists — skipped."
       )
     fi
+    local listing_backfill="$BACKEND/database/migrations/job_listing_type_backfill.sql"
+    if [[ -f "$listing_backfill" ]]; then
+      (
+        cd "$BACKEND"
+        npx --yes wrangler@3 d1 execute godashdevcore01 \
+          --local \
+          --env dev \
+          --file=./database/migrations/job_listing_type_backfill.sql \
+          2>/dev/null || warn "Job listing_type backfill skipped (scanner columns may be missing)."
+      )
+    fi
   fi
 }
 
